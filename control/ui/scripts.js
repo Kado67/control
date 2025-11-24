@@ -1,279 +1,324 @@
 (() => {
-  const API_BASE = (window.__API_BASE__ || "").replace(/\/+$/, "");
+  // ==============================
+  // InflowAI Control Center JS
+  // API: Render -> https://inflowai-api.onrender.com
+  // Eğer API yoksa mock mod çalışır.
+  // ==============================
+
+  const DEFAULT_API = "https://inflowai-api.onrender.com";
+  const API_BASE = (window.__API_BASE__ || DEFAULT_API).replace(/\/+$/, "");
+
   const els = {
     apiPill: document.getElementById("apiPill"),
     apiDot: document.getElementById("apiDot"),
     apiText: document.getElementById("apiText"),
     chipMode: document.getElementById("chipMode"),
+    footApi: document.getElementById("footApi"),
+
     btnRetry: document.getElementById("btnRetry"),
     btnRefresh: document.getElementById("btnRefresh"),
     btnLive: document.getElementById("btnLive"),
+    btnAnalyze: document.getElementById("btnAnalyze"),
+    btnFeatures: document.getElementById("btnFeatures"),
+    btnClearLog: document.getElementById("btnClearLog"),
     btnHamburger: document.getElementById("btnHamburger"),
     sidebar: document.getElementById("sidebar"),
+
     pageTitle: document.getElementById("pageTitle"),
-    logList: document.getElementById("logList"),
-    ortakBox: document.getElementById("ortakBox"),
-    healthBadge: document.getElementById("healthBadge"),
+    pageSubtitle: document.getElementById("pageSubtitle"),
 
     mVisits: document.getElementById("mVisits"),
     mUsers: document.getElementById("mUsers"),
     mGrowth: document.getElementById("mGrowth"),
 
-    bLatency: document.getElementById("bLatency"),
-    bCrash: document.getElementById("bCrash"),
-    bError: document.getElementById("bError"),
+    healthBadge: document.getElementById("healthBadge"),
     bUptime: document.getElementById("bUptime"),
-    bLatencyVal: document.getElementById("bLatencyVal"),
-    bCrashVal: document.getElementById("bCrashVal"),
-    bErrorVal: document.getElementById("bErrorVal"),
+    bLatency: document.getElementById("bLatency"),
+    bError: document.getElementById("bError"),
+    bCrash: document.getElementById("bCrash"),
     bUptimeVal: document.getElementById("bUptimeVal"),
+    bLatencyVal: document.getElementById("bLatencyVal"),
+    bErrorVal: document.getElementById("bErrorVal"),
+    bCrashVal: document.getElementById("bCrashVal"),
 
-    layers: document.getElementById("layers"),
-    btnAskOrtak: document.getElementById("btnAskOrtak"),
-    btnClearLogs: document.getElementById("btnClearLogs"),
-    btnLock: document.getElementById("btnLock"),
-    btnEmergency: document.getElementById("btnEmergency"),
+    ortakPing: document.getElementById("ortakPing"),
+    ortakBox: document.getElementById("ortakBox"),
+    logList: document.getElementById("logList"),
+    featuresList: document.getElementById("featuresList"),
   };
 
-  const pages = [
-    { key:"overview", title:"Genel Bakış" },
-    { key:"core", title:"Core (Beyin)" },
-    { key:"growth", title:"Growth" },
-    { key:"services", title:"Services" },
-    { key:"sharing", title:"Sharing" },
-    { key:"security", title:"Security" },
-    { key:"updating", title:"Updating" },
-    { key:"commands", title:"Komutlar" },
-    { key:"monetization", title:"Monetization" },
-    { key:"infinity", title:"Sonsuzluk Merkezi" },
-  ];
-
-  let apiOnline = false;
+  // ------------------ Utils ------------------
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const now = () => new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   function log(msg, type="info"){
     const li = document.createElement("li");
-    li.className = "log-item";
-    const tm = new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-    li.innerHTML = `<span>${msg}</span><span class="log-time">${tm}</span>`;
+    li.innerHTML = `<span class="t">${now()}</span> ${msg}`;
+    if(type==="ok") li.style.borderColor = "rgba(51,240,164,.35)";
+    if(type==="err") li.style.borderColor = "rgba(255,92,122,.45)";
     els.logList.prepend(li);
   }
 
-  function setApiState(online, note=""){
-    apiOnline = online;
-    els.apiDot.style.background = online ? "var(--good)" : "var(--bad)";
-    els.apiDot.style.color = online ? "var(--good)" : "var(--bad)";
-    els.apiText.textContent = online ? "API bağlı (live)" : "API yok (mock mod)";
-    if(note) els.apiText.textContent += ` • ${note}`;
-    els.chipMode.textContent = online ? "API: LIVE" : "API: MOCK";
-    els.healthBadge.textContent = online ? "Stabil" : "Mock Mod";
-    els.healthBadge.style.borderColor = online ? "rgba(74,222,128,.4)" : "rgba(251,113,133,.4)";
+  function setApiPill(state, text){
+    els.apiPill.classList.remove("ok","err");
+    if(state==="ok"){
+      els.apiPill.classList.add("ok");
+      els.apiText.textContent = text || "API bağlı";
+      els.chipMode.textContent = "API live";
+      els.chipMode.classList.remove("ghost");
+      els.chipMode.style.opacity = 1;
+    } else if(state==="err"){
+      els.apiPill.classList.add("err");
+      els.apiText.textContent = text || "API bağlantısı yok (mock mod)";
+      els.chipMode.textContent = "API mock";
+      els.chipMode.classList.add("ghost");
+    } else {
+      els.apiText.textContent = text || "API kontrol ediliyor...";
+    }
+    els.footApi.textContent = `API: ${API_BASE}`;
   }
 
   async function safeFetch(path, opts={}){
     const url = API_BASE + path;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
     try{
-      const res = await fetch(url, { ...opts, headers:{ "Content-Type":"application/json", ...(opts.headers||{}) } });
-      if(!res.ok) throw new Error(res.status);
+      const res = await fetch(url, { ...opts, signal: ctrl.signal });
+      clearTimeout(t);
+      if(!res.ok) throw new Error("HTTP "+res.status);
       return await res.json();
     }catch(e){
-      return null;
+      clearTimeout(t);
+      throw e;
     }
   }
 
-  // mock data (API yoksa kırılmasın)
-  function mockSummary(){
+  // ------------------ API ------------------
+  async function checkApi(){
+    setApiPill("wait");
+    try{
+      const j = await safeFetch("/api/status");
+      setApiPill("ok", "API bağlı");
+      log("API bağlandı: /api/status ok", "ok");
+      return { ok:true, status:j };
+    }catch(e){
+      setApiPill("err", "API bağlantısı yok (mock mod)");
+      log("API yok, mock moda geçildi. ("+ e.message +")", "err");
+      return { ok:false };
+    }
+  }
+
+  async function loadSummary(apiOk){
+    if(apiOk){
+      try{
+        const j = await safeFetch("/api/ortak/summary");
+        return j?.data || null;
+      }catch(e){
+        log("Summary çekilemedi, mock kullanılıyor. ("+e.message+")","err");
+      }
+    }
+    // mock
     return {
       visits24h: 120,
       activeUsers: 90,
-      growthRate: "3.4%",
+      growthRate: 3.4,
       health: {
+        uptimePct: 96.2,
         latencyMs: 420,
-        crashRate: 0.1,
-        errorRate: 0.7,
-        uptimePct: 99.2
+        errorPct: 0.7,
+        crashRiskPct: 0.0
       },
-      ortak: [
-        "Mock mod aktif. API bağlanınca canlı veriler akar.",
-        "Katmanlar stabil halde.",
-        "Büyüme simülasyonu devam ediyor."
-      ]
+      ortakSpeech: "Mock mod aktif. API geldiğinde otomatik canlıya geçeceğim.",
+      lastEvents: [
+        "Kontrol merkezi açıldı",
+        "Mock motor çalışıyor",
+        "UI stabil"
+      ],
+      checkedAt: new Date().toISOString()
     };
   }
 
-  function renderMetrics(sum){
-    els.mVisits.textContent = `${sum.visits24h ?? "—"}`;
-    els.mUsers.textContent = `${sum.activeUsers ?? "—"}`;
-    els.mGrowth.textContent = `${sum.growthRate ?? "—"}`;
-  }
-
-  function renderHealth(h){
-    const latency = Math.min(100, Math.max(1, (h.latencyMs||400)/10)); // 0-100 scale
-    const crash = Math.min(100, Math.max(1, (h.crashRate||0.2)*100));
-    const error = Math.min(100, Math.max(1, (h.errorRate||0.8)*100));
-    const uptime = Math.min(100, Math.max(1, (h.uptimePct||99)));
-
-    els.bLatency.style.width = `${latency}%`;
-    els.bCrash.style.width = `${crash}%`;
-    els.bError.style.width = `${error}%`;
-    els.bUptime.style.width = `${uptime}%`;
-
-    els.bLatencyVal.textContent = `${h.latencyMs ?? "—"} ms`;
-    els.bCrashVal.textContent = `${h.crashRate ?? "—"}%`;
-    els.bErrorVal.textContent = `${h.errorRate ?? "—"}%`;
-    els.bUptimeVal.textContent = `${h.uptimePct ?? "—"}%`;
-  }
-
-  function renderOrtak(lines){
-    els.ortakBox.innerHTML = "";
-    (lines||[]).forEach(t=>{
-      const div = document.createElement("div");
-      div.className = "ortak-line";
-      div.textContent = t;
-      els.ortakBox.appendChild(div);
-    });
-    if(!lines || !lines.length){
-      const m = document.createElement("div");
-      m.className = "ortak-muted";
-      m.textContent = "Ortak sessiz. Yenile deneyebilirsin.";
-      els.ortakBox.appendChild(m);
+  async function loadFeatures(apiOk){
+    if(apiOk){
+      try{
+        const j = await safeFetch("/api/ortak/features");
+        return j?.data || [];
+      }catch(e){
+        log("Features çekilemedi, mock listesi gösteriliyor. ("+e.message+")","err");
+      }
     }
-  }
-
-  function renderLayers(){
-    const layerNames = [
-      ["Core (Beyin)", "AI çekirdek + karar motoru"],
-      ["Growth", "Kitle büyümesi & analitik"],
-      ["Services", "Modüller ve servisler"],
-      ["Sharing", "Sosyal/dağıtım altyapısı"],
-      ["Security", "Savunma & güvenlik katmanı"],
-      ["Updating", "Sürekli evrim/upgrade"],
-      ["Control", "Kontrol merkezi yönetimi"],
-      ["Sonsuzluk Merkezi", "Veri kasası + acil sistem"]
+    // mock list
+    return [
+      { name:"Auto-Health", desc:"Tüm katmanları gerçek zamanlı tarar." },
+      { name:"OrtakEngine Route", desc:"Katmanlar arası görev paylaşımı." },
+      { name:"Crisis Shield", desc:"Hata/çökme oranını kilitler." },
+      { name:"Infinite Vault", desc:"Sonsuzluk merkezi veri kasası." }
     ];
-    els.layers.innerHTML = "";
-    layerNames.forEach(([title, sub], i)=>{
-      const d = document.createElement("div");
-      d.className = "layer";
-      d.innerHTML = `
-        <div class="layer-title">${title}</div>
-        <div class="layer-sub">${sub}</div>
-        <div class="layer-chip">${apiOnline ? "LIVE" : "SIM"}</div>
-      `;
-      els.layers.appendChild(d);
-    });
   }
 
-  async function checkApi(){
-    const s = await safeFetch("/api/status");
-    if(s && s.status==="ok"){
-      setApiState(true);
-      log("API bağlandı. Canlı mod aktif.");
-      return true;
+  async function analyzeNow(apiOk){
+    if(apiOk){
+      try{
+        const payload = {
+          visits24h: Number(els.mVisits.textContent) || 0,
+          activeUsers: Number(els.mUsers.textContent) || 0,
+          growthRate: parseFloat(els.mGrowth.textContent) || 0
+        };
+        const j = await safeFetch("/api/ortak/analyze", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+        return j?.data;
+      }catch(e){
+        log("Analyze başarısız, mock analiz. ("+e.message+")","err");
+      }
     }
-    setApiState(false);
-    log("API yok. Mock moda geçildi.","warn");
-    return false;
-  }
-
-  async function loadSummary(){
-    let sum = null;
-    if(apiOnline){
-      const r = await safeFetch("/api/ortak/summary");
-      if(r && r.status==="ok") sum = r.data;
-    }
-    if(!sum) sum = mockSummary();
-
-    renderMetrics(sum);
-    renderHealth(sum.health || {});
-    renderOrtak(sum.ortak || []);
-    renderLayers();
-  }
-
-  // NAV
-  function switchPage(key){
-    document.querySelectorAll(".nav-item").forEach(b=>{
-      b.classList.toggle("active", b.dataset.page===key);
-    });
-    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-    const pageEl = document.getElementById(`page-${key}`);
-    if(pageEl) pageEl.classList.add("active");
-
-    const p = pages.find(x=>x.key===key);
-    els.pageTitle.textContent = p ? p.title : key;
-    if(key!=="overview"){
-      pageEl.innerHTML = `
-        <div class="card">
-          <div class="card-title">${els.pageTitle.textContent}</div>
-          <div class="card-sub">Bu katman şimdi UI’da hazır. İçini birlikte dolduracağız.</div>
-        </div>
-      `;
-    }
-  }
-
-  // EVENTS
-  document.querySelectorAll(".nav-item").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      switchPage(btn.dataset.page);
-      if(window.innerWidth<=800) els.sidebar.classList.remove("open");
-    });
-  });
-
-  els.btnHamburger?.addEventListener("click", ()=>{
-    els.sidebar.classList.toggle("open");
-  });
-
-  els.btnRetry?.addEventListener("click", async ()=>{
-    await checkApi();
-    await loadSummary();
-  });
-  els.btnRefresh?.addEventListener("click", loadSummary);
-  els.btnLive?.addEventListener("click", ()=>log("Live panel açık."));
-
-  els.btnAskOrtak?.addEventListener("click", async ()=>{
-    if(!apiOnline){
-      log("API yokken ortak analiz alınamaz. Mock metin gösteriliyor.");
-      renderOrtak(mockSummary().ortak);
-      return;
-    }
-    const sampleMetrics = {
-      visits24h: Number(els.mVisits.textContent)||0,
-      activeUsers: Number(els.mUsers.textContent)||0
+    return {
+      verdict: "Kararlı",
+      note: "Mock analiz: sistem dengeli, büyüme sürüyor."
     };
-    const r = await safeFetch("/api/ortak/analyze", {
-      method:"POST",
-      body: JSON.stringify(sampleMetrics)
-    });
-    if(r && r.status==="ok"){
-      renderOrtak([
-        "Ortak analiz tamamlandı:",
-        JSON.stringify(r.data, null, 2)
-      ]);
-      log("Ortak analiz aldı.");
-    }else{
-      log("Ortak analiz alınamadı.");
+  }
+
+  // ------------------ Render UI ------------------
+  function renderSummary(s){
+    els.mVisits.textContent = s.visits24h ?? "—";
+    els.mUsers.textContent = s.activeUsers ?? "—";
+    els.mGrowth.textContent = (s.growthRate ?? "—") + (typeof s.growthRate==="number" ? "%" : "");
+
+    const h = s.health || {};
+    const uptimePct = clamp(h.uptimePct ?? 90, 0, 100);
+    const latencyMs = h.latencyMs ?? 500;
+    const errorPct = clamp(h.errorPct ?? 0.5, 0, 100);
+    const crashRisk = clamp(h.crashRiskPct ?? 0, 0, 100);
+
+    setBar(els.bUptime, els.bUptimeVal, uptimePct, uptimePct.toFixed(1)+"%");
+    const latScore = clamp(100 - (latencyMs/10), 5, 100);
+    setBar(els.bLatency, els.bLatencyVal, latScore, latencyMs+" ms");
+    setBar(els.bError, els.bErrorVal, 100-errorPct, errorPct.toFixed(2)+"%");
+    setBar(els.bCrash, els.bCrashVal, 100-crashRisk, crashRisk.toFixed(2)+"%");
+
+    // badge
+    let badgeClass="ok", badgeText="Stabil";
+    if(errorPct>2 || crashRisk>2) { badgeClass="warn"; badgeText="Dikkat"; }
+    if(errorPct>5 || crashRisk>5) { badgeClass="err"; badgeText="Risk"; }
+    els.healthBadge.className = "badge " + badgeClass;
+    els.healthBadge.textContent = badgeText;
+
+    els.ortakBox.textContent = s.ortakSpeech || "Ortak motoru bekleniyor…";
+    els.ortakPing.textContent = "son kontrol: " + new Date(s.checkedAt || Date.now()).toLocaleTimeString("tr-TR");
+
+    if(Array.isArray(s.lastEvents)){
+      s.lastEvents.slice(0,6).forEach(ev => log(ev, "ok"));
     }
-  });
+  }
 
-  els.btnClearLogs?.addEventListener("click", ()=>{
-    els.logList.innerHTML="";
-    log("Log temizlendi.");
-  });
+  function renderFeatures(list){
+    els.featuresList.innerHTML = "";
+    list.forEach((f) => {
+      const div = document.createElement("div");
+      div.className="feature";
+      div.innerHTML = `
+        <div>
+          <div class="name">${escapeHtml(f.name || "Feature")}</div>
+          <div class="desc">${escapeHtml(f.desc || "")}</div>
+        </div>
+        <div class="muted">aktif</div>
+      `;
+      els.featuresList.appendChild(div);
+    });
+  }
 
-  els.btnLock?.addEventListener("click", ()=>{
-    log("Panel kilitleme modu (UI).");
-    document.body.classList.toggle("locked");
-  });
+  function setBar(elFill, elVal, pct, text){
+    elFill.style.width = pct + "%";
+    elVal.textContent = text;
+  }
 
-  els.btnEmergency?.addEventListener("click", ()=>{
-    log("Acil Mod tetiklendi (UI).","bad");
-    document.body.classList.add("emergency");
-    setTimeout(()=>document.body.classList.remove("emergency"), 1200);
-  });
+  function clamp(n,a,b){ return Math.min(b, Math.max(a,n)); }
 
-  // INIT
-  (async function init(){
-    log("Kontrol merkezi açıldı.");
-    await checkApi();
-    await loadSummary();
-  })();
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[s]));
+  }
+
+  // ------------------ Navigation ------------------
+  const pages = {
+    overview: { title:"Genel Bakış", sub:"Tüm katmanları buradan izleyip yönetebilirsin." },
+    core: { title:"Core (Beyin)", sub:"Beyin katmanı canlı API ile beslenecek." },
+    growth: { title:"Growth", sub:"Büyüme metrikleri ve trend zekâsı." },
+    services: { title:"Services", sub:"Servis durumu, bağımlılıklar, otomasyon." },
+    sharing: { title:"Sharing", sub:"Paylaşım ve dağıtım katmanı." },
+    security: { title:"Security", sub:"Koruma kalkanı ve güvenlik raporları." },
+    updating: { title:"Updating", sub:"Kendi kendini güncelleyen yapı." },
+    commands: { title:"Komutlar", sub:"Ortak engine komutları ve özellikler." },
+    monetization: { title:"Monetization", sub:"Premium, B2B ve gelir sistemi." },
+    infinite: { title:"Sonsuzluk Merkezi", sub:"Evren dışı veri kasası." }
+  };
+
+  function showPage(key){
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("show"));
+    const el = document.getElementById("page-"+key);
+    if(el) el.classList.add("show");
+
+    document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+    document.querySelector(`.nav-item[data-page="${key}"]`)?.classList.add("active");
+
+    els.pageTitle.textContent = pages[key]?.title || key;
+    els.pageSubtitle.textContent = pages[key]?.sub || "";
+    if(window.innerWidth < 980) els.sidebar.classList.remove("open");
+  }
+
+  // ------------------ Events ------------------
+  function bind(){
+    document.querySelectorAll(".nav-item").forEach(btn=>{
+      btn.addEventListener("click", () => showPage(btn.dataset.page));
+    });
+
+    els.btnRetry.addEventListener("click", boot);
+    els.btnRefresh.addEventListener("click", boot);
+
+    els.btnFeatures.addEventListener("click", () => showPage("commands"));
+
+    els.btnAnalyze.addEventListener("click", async () => {
+      const apiOk = els.apiPill.classList.contains("ok");
+      const analysis = await analyzeNow(apiOk);
+      if(analysis){
+        els.ortakBox.textContent =
+          (analysis.verdict ? `Durum: ${analysis.verdict}\n` : "") +
+          (analysis.note || JSON.stringify(analysis));
+        log("Ortak analiz güncellendi.", "ok");
+      }
+    });
+
+    els.btnClearLog.addEventListener("click", () => {
+      els.logList.innerHTML="";
+      log("Log temizlendi.");
+    });
+
+    els.btnHamburger.addEventListener("click", () => {
+      els.sidebar.classList.toggle("open");
+    });
+
+    els.btnLive.addEventListener("click", () => {
+      log("Live mod tetiklendi.");
+      boot();
+    });
+  }
+
+  // ------------------ Boot ------------------
+  async function boot(){
+    log("Kontrol merkezi senkron başlıyor...");
+    const { ok } = await checkApi();
+    const summary = await loadSummary(ok);
+    renderSummary(summary);
+
+    const features = await loadFeatures(ok);
+    renderFeatures(features);
+
+    log("Panel hazır.", "ok");
+  }
+
+  bind();
+  boot();
 })();
