@@ -1,97 +1,75 @@
 <!DOCTYPE html>
-<html lang="tr" class="theme-dark">
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>InflowAI Kontrol Merkezi</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-
 <body>
   <div class="app">
-
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo"></div>
+        <div class="brand-logo">🌍</div>
         <div class="brand-text">
-          <div class="brand-title">🌍 InflowAI</div>
+          <div class="brand-title">InflowAI</div>
           <div class="brand-sub">Kontrol Merkezi</div>
         </div>
       </div>
 
-      <div id="api-pill" class="api-pill">
-        <span class="dot"></span>
-        <span class="api-text">API kontrol ediliyor...</span>
-        <button id="api-test" class="mini-btn">Test</button>
-      </div>
-
-      <nav class="nav">
-        <button class="nav-item active" data-page="overview">
-          <span class="nav-ico">📊</span> Genel Bakış
-        </button>
-        <button class="nav-item" data-page="core">
-          <span class="nav-ico">🧠</span> Core (Beyin)
-        </button>
-        <button class="nav-item" data-page="growth">
-          <span class="nav-ico">🚀</span> Growth
-        </button>
-        <button class="nav-item" data-page="services">
-          <span class="nav-ico">🧩</span> Services
-        </button>
-        <button class="nav-item" data-page="security">
-          <span class="nav-ico">🛡️</span> Security
-        </button>
-        <button class="nav-item" data-page="updating">
-          <span class="nav-ico">🔁</span> Updating
-        </button>
-        <button class="nav-item" data-page="commands">
-          <span class="nav-ico">⌨️</span> Komutlar
-        </button>
-        <button class="nav-item" data-page="monetization">
-          <span class="nav-ico">💳</span> Monetization
-        </button>
-        <button class="nav-item" data-page="infinity">
-          <span class="nav-ico">♾️</span> Sonsuzluk Merkezi
-        </button>
-        <button class="nav-item" data-page="users">
-          <span class="nav-ico">👥</span> Users
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="version">
-          <div class="version-title">Sürüm</div>
-          <div class="version-badges">
-            <span class="badge">Ortak v1.0</span>
-            <span class="badge ghost">UI v1.0</span>
-            <span class="badge ghost" id="last-updated">--:--</span>
+      <div class="status-card">
+        <div class="status-row">
+          <span class="dot" id="apiDot"></span>
+          <div>
+            <div class="status-title" id="apiTitle">API kontrol ediliyor…</div>
+            <div class="status-sub" id="apiSub">Bağlanıyor</div>
           </div>
         </div>
 
-        <div class="quick-actions">
-          <button id="btn-refresh" class="ghost-btn">Verileri Yenile</button>
-          <button id="btn-live" class="ghost-btn">Live / Mock</button>
+        <div class="mode-row">
+          <button id="refreshBtn" class="btn btn-ghost">Verileri Yenile</button>
+          <button id="toggleModeBtn" class="btn btn-solid">Live / Mock</button>
         </div>
+
+        <div class="version">
+          <div>Ortak v1.0</div>
+          <div>UI v1.1</div>
+          <div id="clock">--:--</div>
+        </div>
+      </div>
+
+      <nav class="menu" id="menu">
+        <button class="menu-item active" data-section="overview">📊 Genel Bakış</button>
+        <button class="menu-item" data-section="core">🧠 Core (Beyin)</button>
+        <button class="menu-item" data-section="growth">🚀 Growth</button>
+        <button class="menu-item" data-section="services">🧩 Services</button>
+        <button class="menu-item" data-section="sharing">🔗 Sharing</button>
+        <button class="menu-item" data-section="security">🛡️ Security</button>
+        <button class="menu-item" data-section="updating">🔁 Updating</button>
+        <button class="menu-item" data-section="commands">✨ Komutlar</button>
+        <button class="menu-item" data-section="monetization">💰 Monetization</button>
+        <button class="menu-item" data-section="infinity">♾️ Sonsuzluk Merkezi</button>
+        <button class="menu-item" data-section="users">👥 Users</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="lockPanelBtn" class="btn btn-ghost w-full">Paneli Kilitle</button>
+        <button id="panicBtn" class="btn btn-danger w-full">Acil Mod</button>
       </div>
     </aside>
 
     <!-- MAIN -->
     <main class="main">
-
-      <!-- TOPBAR -->
       <header class="topbar">
-        <div class="topbar-left">
-          <h1>Kontrol Merkezi</h1>
-          <p>Platformun tamamını buradan yöneteceksin.</p>
+        <div class="top-left">
+          <h1 id="pageTitle">Genel Bakış</h1>
+          <p id="pageDesc">Tüm katmanları buradan izleyip yönetebilirsin.</p>
         </div>
-        <div class="topbar-right">
-          <div class="segmented">
-            <button class="seg-btn primary">Canlı İzleme</button>
-            <button class="seg-btn">Analiz</button>
-          </div>
+        <div class="top-right">
+          <button id="ortakOpenBtn" class="btn btn-glow">🤝 Ortak (Konuş)</button>
           <div class="user-chip">
-            <span class="user-dot"></span>
+            <span class="avatar">K</span>
             <div>
               <div class="user-name">Kadir</div>
               <div class="user-role">Kurucu / Admin</div>
@@ -101,373 +79,145 @@
       </header>
 
       <!-- CONTENT -->
-      <section class="content">
-
+      <section class="content" id="content">
         <!-- OVERVIEW -->
-        <div class="page active grid" data-page="overview">
-
-          <div class="grid kpi-grid">
-            <div class="card kpi">
-              <div class="kpi-label">Bugünkü Ziyaret</div>
-              <div id="kpi-todayVisits" class="kpi-value">0</div>
-              <div class="kpi-sub">Son 24 saat</div>
-            </div>
-
-            <div class="card kpi">
-              <div class="kpi-label">Aktif Kullanıcı</div>
-              <div id="kpi-activeUsers" class="kpi-value">0</div>
-              <div class="kpi-sub">Şu anda</div>
-            </div>
-
-            <div class="card kpi">
-              <div class="kpi-label">Günlük Büyüme</div>
-              <div id="kpi-growthRate" class="kpi-value">0%</div>
-              <div class="kpi-sub">Ortalama</div>
-            </div>
-
-            <div class="card kpi">
-              <div class="kpi-label">Sistem Sağlığı</div>
-              <div id="kpi-systemHealth" class="kpi-value">0/100</div>
-              <div class="kpi-sub">Global skor</div>
-            </div>
-          </div>
-
-          <div class="grid two-col">
-            <!-- ORTAK -->
-            <div class="card">
-              <div class="card-head">
-                <h2>🤖 Ortak (Canlı Özet)</h2>
-                <div class="card-actions">
-                  <span class="pill ok" id="ortak-mood">Sakin</span>
-                </div>
-              </div>
-
-              <div class="assistant-box">
-                <div class="assistant-msg">
-                  <div class="assistant-avatar"></div>
-                  <div id="assistant-bubble" class="assistant-bubble">
-                    <div class="assistant-title">Ortak</div>
-                    <p id="ortak-summary">Özet yükleniyor...</p>
-                  </div>
-                </div>
-
-                <div class="assistant-actions">
-                  <button id="assistant-qa" class="btn">Durum Tara</button>
-                  <button id="assistant-auto" class="btn primary">Auto Optimizasyon</button>
-                  <button id="assistant-repair" class="btn ghost">Zayıf Katman Bul</button>
-                </div>
-              </div>
-
-              <div class="mini-grid">
-                <div class="mini">
-                  <div class="mini-title">Health</div>
-                  <div id="mini-health" class="mini-val">0</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Durum</div>
-                  <div id="mini-state" class="mini-val">--</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Uptime</div>
-                  <div id="mini-uptime" class="mini-val">--%</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Latency</div>
-                  <div id="mini-latency" class="mini-val">--ms</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Error</div>
-                  <div id="mini-error" class="mini-val">--%</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- SERVICES STATUS -->
-            <div class="card">
-              <div class="card-head">
-                <h2>🛰️ Katman Sağlığı</h2>
-                <div class="card-actions">
-                  <span class="pill ghost">Gerçek zamanlı</span>
-                </div>
-              </div>
-
-              <div id="service-list" class="status-list"></div>
-
-              <div class="divider"></div>
-
-              <div class="status-row">
-                <div>
-                  <div class="status-title">API Uptime</div>
-                  <div class="status-desc">Render üzerinden ölçüm</div>
-                </div>
-                <div class="meter" id="uptime-meter">--%</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- LOGS -->
+        <div class="grid" data-view="overview">
           <div class="card">
-            <div class="card-head">
-              <h2>📜 Canlı Loglar</h2>
-              <div class="card-actions">
-                <span class="pill ghost" id="log-count">0 kayıt</span>
-              </div>
+            <div class="card-title">Bugünkü Ziyaret</div>
+            <div class="big-number" id="visitToday">--</div>
+            <div class="muted" id="visitNote">Son 24 saat</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Aktif Kullanıcı</div>
+            <div class="big-number" id="activeUsers">--</div>
+            <div class="muted">Şu an çevrimiçi</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Büyüme Oranı</div>
+            <div class="big-number" id="growthRate">--%</div>
+            <div class="muted">Günlük trend</div>
+          </div>
+
+          <div class="card wide">
+            <div class="card-title">Sistem Sağlığı Detayı</div>
+            <div class="health-list" id="healthList"></div>
+          </div>
+
+          <div class="card wide">
+            <div class="card-title">Ortak Konuşuyor</div>
+            <div class="muted mb8">
+              Ortak motoru durum özeti. Detay için Ortak (Konuş) butonuna bas.
             </div>
-            <ul id="log-list" class="log-list"></ul>
+            <div class="ortak-box" id="ortakSummaryBox">--</div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Son Olaylar (Log)</div>
+            <ul class="log-list" id="logList"></ul>
           </div>
         </div>
 
-        <!-- CORE -->
-        <div class="page grid" data-page="core">
+        <!-- OTHER SECTIONS -->
+        <div class="stack hidden" data-view="core">
           <div class="card">
-            <div class="card-head">
-              <h2>🧠 Core Kontrol</h2>
-              <div class="card-actions">
-                <span class="pill ok">Aktif</span>
-              </div>
-            </div>
-
-            <div class="toggle-list">
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Otomatik Mini Özellikler</div>
-                  <div class="toggle-desc">Beyin küçük özellikleri kendi aktif eder.</div>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" data-label="Otomatik Mini Özellikler" checked />
-                  <span class="slider"></span>
-                </label>
-              </div>
-
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Akıllı Hata Onarma</div>
-                  <div class="toggle-desc">Hata yakalayınca otomatik çözüm dener.</div>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" data-label="Akıllı Hata Onarma" checked />
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
+            <div class="card-title">Core (Beyin)</div>
+            <div class="muted">Beyin katmanı; karar, analiz ve otomasyon çekirdeği.</div>
+            <div class="pill-row" id="corePills"></div>
           </div>
         </div>
 
-        <!-- GROWTH -->
-        <div class="page grid" data-page="growth">
+        <div class="stack hidden" data-view="growth">
           <div class="card">
-            <div class="card-head">
-              <h2>🚀 Growth Yönetimi</h2>
-              <div class="card-actions">
-                <span class="pill ghost">A/B - Trafik - Retention</span>
-              </div>
-            </div>
-
-            <div class="action-grid">
-              <button class="action-tile" disabled>
-                <div class="tile-title">A/B Test Başlat</div>
-                <div class="tile-desc">Landing varyasyonlarını test et.</div>
-              </button>
-              <button class="action-tile" disabled>
-                <div class="tile-title">SEO Boost</div>
-                <div class="tile-desc">Otomatik içerik + schema.</div>
-              </button>
-              <button class="action-tile" disabled>
-                <div class="tile-title">Retention Görevi</div>
-                <div class="tile-desc">Ziyaretçi tutma otomasyonu.</div>
-              </button>
-            </div>
-
-            <p class="muted">Bu alan Ortak önerileriyle otomatik dolacak.</p>
+            <div class="card-title">Growth</div>
+            <div class="muted">Büyüme, trafik, retention, hedefler.</div>
+            <div class="grid-2" id="growthGrid"></div>
           </div>
         </div>
 
-        <!-- SERVICES -->
-        <div class="page grid" data-page="services">
+        <div class="stack hidden" data-view="services">
           <div class="card">
-            <div class="card-head">
-              <h2>🧩 Services</h2>
-            </div>
-            <div class="service-list muted">
-              Services detayları Ortak motorundan gelecek.
-            </div>
+            <div class="card-title">Services</div>
+            <div class="muted">Platform servisleri ve durumları.</div>
+            <div class="grid-2" id="servicesGrid"></div>
           </div>
         </div>
 
-        <!-- SECURITY -->
-        <div class="page grid" data-page="security">
+        <div class="stack hidden" data-view="sharing">
           <div class="card">
-            <div class="card-head">
-              <h2>🛡️ Güvenlik</h2>
-              <div class="card-actions">
-                <span class="pill warn">İzleniyor</span>
-              </div>
-            </div>
-
-            <div class="toggle-list compact">
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Admin Şifre Kalkanı</div>
-                  <div class="toggle-desc">Kontrol merkezi giriş kilidi.</div>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" data-label="Admin Şifre Kalkanı" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Bot Trafik Filtre</div>
-                  <div class="toggle-desc">Spam ve botları engeller.</div>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" data-label="Bot Trafik Filtre" checked />
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
+            <div class="card-title">Sharing</div>
+            <div class="muted">Paylaşım, sosyal tetikleyiciler, otomatik dağıtım.</div>
           </div>
         </div>
 
-        <!-- UPDATING -->
-        <div class="page grid" data-page="updating">
+        <div class="stack hidden" data-view="security">
           <div class="card">
-            <div class="card-head">
-              <h2>🔁 Updating</h2>
-            </div>
-            <div class="update-box">
-              <div class="update-row">
-                <div class="update-title">Otomatik Güncelleme</div>
-                <label class="switch">
-                  <input type="checkbox" data-label="Otomatik Güncelleme" checked />
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <div class="update-row">
-                <div class="update-title">Model Yenileme</div>
-                <label class="switch">
-                  <input type="checkbox" data-label="Model Yenileme" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
+            <div class="card-title">Security</div>
+            <div class="muted">Güvenlik, firewall, saldırı önleme, gizli kasa.</div>
           </div>
         </div>
 
-        <!-- COMMANDS -->
-        <div class="page grid" data-page="commands">
+        <div class="stack hidden" data-view="updating">
           <div class="card">
-            <div class="card-head">
-              <h2>⌨️ Komut Konsolu</h2>
-              <div class="card-actions">
-                <button id="cmd-clear" class="ghost-btn sm">Temizle</button>
-              </div>
-            </div>
-
-            <div class="command-input">
-              <input id="cmd-input" type="text" placeholder="Komut yaz: status, restart core, scale auto..." />
-              <button id="cmd-run" class="btn primary">Çalıştır</button>
-            </div>
-
-            <div class="command-tags">
-              <button class="tag" data-cmd="status">status</button>
-              <button class="tag" data-cmd="restart core">restart core</button>
-              <button class="tag" data-cmd="scale auto">scale auto</button>
-              <button class="tag" data-cmd="help">help</button>
-            </div>
-
-            <pre id="cmd-output" class="cmd-output"></pre>
+            <div class="card-title">Updating</div>
+            <div class="muted">Güncelleme stratejisi, versiyon kontrolü.</div>
           </div>
         </div>
 
-        <!-- MONETIZATION -->
-        <div class="page grid" data-page="monetization">
+        <div class="stack hidden" data-view="commands">
           <div class="card">
-            <div class="card-head">
-              <h2>💳 Paketler ve Ödeme</h2>
+            <div class="card-title">Komutlar</div>
+            <div class="muted">Ortak’a komut gönderip katmanlara yön verebilirsin.</div>
+            <div class="cmd-row">
+              <input id="cmdInput" class="input" placeholder="Komut yaz..." />
+              <button id="cmdSendBtn" class="btn btn-solid">Gönder</button>
             </div>
-
-            <div class="toggle-list">
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Ücretsiz Paket</div>
-                  <div class="toggle-desc">Şu an yayında.</div>
-                </div>
-                <span class="pill ok">Yayında</span>
-              </div>
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Premium Paket</div>
-                  <div class="toggle-desc">Aç/Kapat ile aktive edilir.</div>
-                </div>
-                <label class="switch">
-                  <input id="toggle-premium" type="checkbox" data-label="Premium Paket" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Kurumsal Paket</div>
-                  <div class="toggle-desc">Aç/Kapat ile aktive edilir.</div>
-                </div>
-                <label class="switch">
-                  <input id="toggle-corporate" type="checkbox" data-label="Kurumsal Paket" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">B2B Paket</div>
-                  <div class="toggle-desc">Aç/Kapat ile aktive edilir.</div>
-                </div>
-                <label class="switch">
-                  <input id="toggle-b2b" type="checkbox" data-label="B2B Paket" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <p class="muted">
-              Adsense / Ödeme entegrasyonları Ortak önerileriyle burada listelenecek.
-            </p>
+            <div id="cmdResult" class="cmd-result"></div>
           </div>
         </div>
 
-        <!-- INFINITY -->
-        <div class="page grid" data-page="infinity">
+        <div class="stack hidden" data-view="monetization">
           <div class="card">
-            <div class="card-head">
-              <h2>♾️ Sonsuzluk Merkezi (Notlar)</h2>
-              <div class="card-actions">
-                <button id="notes-save" class="btn primary">Kaydet</button>
-                <button id="notes-clear" class="btn">Temizle</button>
-              </div>
-            </div>
-
-            <textarea id="notes-textarea" placeholder="Platform için notlar, planlar, fikirler..."></textarea>
+            <div class="card-title">Monetization</div>
+            <div class="muted">AdSense, Premium, B2B, Kurumsal gelir akışları.</div>
           </div>
         </div>
 
-        <!-- USERS -->
-        <div class="page grid" data-page="users">
+        <div class="stack hidden" data-view="infinity">
           <div class="card">
-            <div class="card-head">
-              <h2>👥 Users Analizi</h2>
-            </div>
-            <p class="muted">Canlı kayıt/ziyaretçi verileri Ortak motorundan gelecek.</p>
+            <div class="card-title">Sonsuzluk Merkezi</div>
+            <div class="muted">Sistemin “hayat sigortası” ve sınırsız bellek/akıl katmanı.</div>
           </div>
         </div>
 
+        <div class="stack hidden" data-view="users">
+          <div class="card">
+            <div class="card-title">Users</div>
+            <div class="muted">Kullanıcı istatistikleri ve segmentler.</div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
 
-  <!-- TOAST -->
-  <div id="toast" class="toast">
-    <div id="toast-inner" class="toast-inner">...</div>
+  <!-- ORTAK CHAT MODAL -->
+  <div class="modal hidden" id="ortakModal">
+    <div class="modal-backdrop" id="ortakCloseBackdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="dot lg" id="chatDot"></span>
+          Ortak Motoru
+        </div>
+        <button class="btn btn-ghost" id="ortakCloseBtn">Kapat ✕</button>
+      </div>
+
+      <div class="chat-body" id="chatBody"></div>
+
+      <div class="chat-input">
+        <input id="chatInput" class="input" placeholder="Ortak’a yaz..." />
+        <button id="chatSendBtn" class="btn btn-solid">Gönder</button>
+      </div>
+    </div>
   </div>
 
   <script src="./scripts.js"></script>
