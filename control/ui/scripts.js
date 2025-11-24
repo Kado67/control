@@ -1,441 +1,424 @@
-/* =========================
-   InflowAI Control Center UI
-   scripts.js  (API + fallback mock)
-   ========================= */
-(() => {
-  "use strict";
+/* InflowAI Control Center UI v1.1 */
 
-  /* ---------- Helpers ---------- */
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const on = (el, ev, fn, opt) => el && el.addEventListener(ev, fn, opt);
-  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-  const fmt = (n) => Number(n || 0).toLocaleString("tr-TR");
-  const nowTime = () =>
-    new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+const API_BASE_LIVE = "https://inflowai-api.onrender.com";
+const STORAGE_MODE_KEY = "inflowai_mode";
+const STORAGE_SECTION_KEY = "inflowai_section";
 
-  /* ---------- API BASE (Render) ---------- */
-  const API_BASE = "https://inflowai-api.onrender.com";
+let mode = localStorage.getItem(STORAGE_MODE_KEY) || "live"; // live | mock
+let apiOnline = false;
+let cachedSummary = null;
+let cachedFeatures = null;
 
-  /* ---------- State ---------- */
-  const state = {
-    activePage: "overview",
-    mockMode: false,             // ÖNEMLİ: artık varsayılan live
-    lastUpdatedAt: Date.now(),
-    kpis: {
-      todayVisits: 0,
-      activeUsers: 0,
-      growthRate: 0,
-      systemHealth: 0
-    },
-    services: [
-      { key: "core", name: "Core (Beyin)", status: "ok" },
-      { key: "growth", name: "Growth", status: "ok" },
-      { key: "services", name: "Services", status: "ok" },
-      { key: "sharing", name: "Sharing", status: "warn" },
-      { key: "security", name: "Security", status: "ok" },
-      { key: "updating", name: "Updating", status: "ok" },
-    ],
-    logs: [
-      { t: nowTime(), m: "Ortak motoru başlatılıyor..." }
-    ],
-  };
+// DOM
+const apiDot = document.getElementById("apiDot");
+const apiTitle = document.getElementById("apiTitle");
+const apiSub = document.getElementById("apiSub");
+const chatDot = document.getElementById("chatDot");
 
-  /* ---------- Init ---------- */
-  document.addEventListener("DOMContentLoaded", async () => {
-    bindNav();
-    bindTopbar();
-    bindToggles();
-    bindCommands();
-    bindAssistant();
-    bindNotes();
-    bindApiTest();
+const refreshBtn = document.getElementById("refreshBtn");
+const toggleModeBtn = document.getElementById("toggleModeBtn");
+const menu = document.getElementById("menu");
+const content = document.getElementById("content");
 
-    // İlk render
-    renderAll();
+const pageTitle = document.getElementById("pageTitle");
+const pageDesc = document.getElementById("pageDesc");
+const clockEl = document.getElementById("clock");
 
-    // İlk API ping
-    const ok = await pingApi();
-    if (!ok) {
-      state.mockMode = true;
-      pushLog("API erişilemedi. Mock moda geçildi.");
+// Overview DOM
+const visitToday = document.getElementById("visitToday");
+const activeUsers = document.getElementById("activeUsers");
+const growthRate = document.getElementById("growthRate");
+const healthList = document.getElementById("healthList");
+const ortakSummaryBox = document.getElementById("ortakSummaryBox");
+const logList = document.getElementById("logList");
+
+// Other sections
+const corePills = document.getElementById("corePills");
+const growthGrid = document.getElementById("growthGrid");
+const servicesGrid = document.getElementById("servicesGrid");
+
+// Commands
+const cmdInput = document.getElementById("cmdInput");
+const cmdSendBtn = document.getElementById("cmdSendBtn");
+const cmdResult = document.getElementById("cmdResult");
+
+// Chat DOM
+const ortakModal = document.getElementById("ortakModal");
+const ortakOpenBtn = document.getElementById("ortakOpenBtn");
+const ortakCloseBtn = document.getElementById("ortakCloseBtn");
+const ortakCloseBackdrop = document.getElementById("ortakCloseBackdrop");
+const chatBody = document.getElementById("chatBody");
+const chatInput = document.getElementById("chatInput");
+const chatSendBtn = document.getElementById("chatSendBtn");
+
+// Utils
+const nowTR = () => new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+
+function setClock(){
+  clockEl.textContent = nowTR();
+}
+setInterval(setClock, 1000);
+setClock();
+
+function setMode(next){
+  mode = next;
+  localStorage.setItem(STORAGE_MODE_KEY, mode);
+  renderModeUI();
+  loadAll();
+}
+
+function renderModeUI(){
+  const live = mode === "live";
+  toggleModeBtn.textContent = live ? "Live (Aktif)" : "Mock (Aktif)";
+  toggleModeBtn.classList.toggle("btn-solid", live);
+  toggleModeBtn.classList.toggle("btn-ghost", !live);
+}
+
+// Fetch wrapper
+async function apiFetch(path, options={}){
+  if(mode !== "live"){
+    throw new Error("mock-mode");
+  }
+  const url = API_BASE_LIVE + path;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type":"application/json",
+      ...(options.headers||{})
     }
+  });
+  if(!res.ok) throw new Error("api-error");
+  return res.json();
+}
 
-    // İlk veri çek
-    await refreshData(true);
+// Health + mock data
+function getMockSummary(){
+  return {
+    visitsToday: 120,
+    activeUsers: 90,
+    growthRate: 3.4,
+    health: [
+      {name:"API Çalışma", value: 96},
+      {name:"Ortalama Gecikme", value: 420},
+      {name:"Hata Oranı", value: 0.7},
+      {name:"Uptime", value: 99.7},
+    ],
+    ortakText: "Mock moddasın. API kapalıysa bile panel çalışır. Live’a alınca gerçek veriler akar.",
+    logs: [
+      "Ortak motoru hazır: Mock starter.",
+      "Core çekirdeği stabil.",
+      "Growth izleme modu açık."
+    ],
+    coreTags:["Karar Motoru","Görev Kuyruğu","Özet Üretim","Kural Sistemi"],
+    growthCards:[
+      {title:"Son 24s Trafik", value:"+%28"},
+      {title:"Yeni Kayıt", value:"56"},
+      {title:"Retention", value:"%62"},
+      {title:"Hedefler", value:"3/7"}
+    ],
+    servicesCards:[
+      {title:"Asistan Servisi", value:"Running"},
+      {title:"Analytics Servisi", value:"Idle"},
+      {title:"Sharing Servisi", value:"Ready"},
+      {title:"Security Servisi", value:"Guard"}
+    ]
+  };
+}
 
-    // Ticker
-    startTicker();
+async function checkApi(){
+  if(mode !== "live"){
+    apiOnline = false;
+    setApiUI("warn","Mock mod aktif","API çağrıları kapalı");
+    return;
+  }
+  try{
+    const status = await apiFetch("/api/status");
+    apiOnline = status?.status === "ok";
+    setApiUI("good","API bağlantısı aktif (live)", status?.message || "Render API");
+  }catch(e){
+    apiOnline = false;
+    setApiUI("bad","API bağlantısı yok","Otomatik Mock’a düşüldü");
+    mode = "mock";
+    localStorage.setItem(STORAGE_MODE_KEY, mode);
+    renderModeUI();
+  }
+}
+
+function setApiUI(type,title,sub){
+  apiDot.className = "dot " + type;
+  chatDot.className = "dot lg " + type;
+  apiTitle.textContent = title;
+  apiSub.textContent = sub;
+}
+
+// Loaders
+async function loadSummary(){
+  if(mode === "mock"){
+    cachedSummary = getMockSummary();
+    return cachedSummary;
+  }
+  const data = await apiFetch("/api/ortak/summary");
+  // backend summary formatını koruyup UI'ya map ediyoruz:
+  const s = data?.data || {};
+  cachedSummary = {
+    visitsToday: s.visitsToday ?? 0,
+    activeUsers: s.activeUsers ?? 0,
+    growthRate: s.growthRate ?? 0,
+    health: s.health ?? [],
+    ortakText: s.ortakText ?? "Ortak motoru canlı.",
+    logs: s.logs ?? [],
+    coreTags: s.coreTags ?? ["Karar Motoru","Görev Sistemi"],
+    growthCards: s.growthCards ?? [],
+    servicesCards: s.servicesCards ?? []
+  };
+  return cachedSummary;
+}
+
+async function loadFeatures(){
+  if(mode === "mock"){
+    cachedFeatures = {
+      core:["Karar Motoru","Özet Üretimi","Otomasyon"],
+      growth:["Trafik İzleme","Retention"],
+      security:["Firewall","Rate Limit"]
+    };
+    return cachedFeatures;
+  }
+  const data = await apiFetch("/api/ortak/features");
+  cachedFeatures = data?.data || {};
+  return cachedFeatures;
+}
+
+function renderOverview(summary){
+  visitToday.textContent = summary.visitsToday ?? "--";
+  activeUsers.textContent = summary.activeUsers ?? "--";
+  growthRate.textContent = (summary.growthRate ?? "--") + "%";
+
+  healthList.innerHTML = "";
+  (summary.health || []).forEach(h=>{
+    const item = document.createElement("div");
+    item.className = "health-item";
+    const val = h.value ?? 0;
+    const pct = Math.max(0, Math.min(100, val));
+    item.innerHTML = `
+      <div>${h.name}</div>
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <div>${val}${h.name.includes("Gecikme") ? "ms" : "%"}</div>
+    `;
+    healthList.appendChild(item);
   });
 
-  /* ---------- Navigation ---------- */
-  function bindNav() {
-    $$(".nav-item").forEach(btn => {
-      on(btn, "click", () => setActivePage(btn.dataset.page));
+  ortakSummaryBox.textContent = summary.ortakText || "--";
+
+  logList.innerHTML = "";
+  (summary.logs || []).slice(0,6).forEach(l=>{
+    const li = document.createElement("li");
+    li.textContent = "• " + l;
+    logList.appendChild(li);
+  });
+
+  corePills.innerHTML = "";
+  (summary.coreTags || []).forEach(t=>{
+    const p = document.createElement("div");
+    p.className="pill";
+    p.textContent=t;
+    corePills.appendChild(p);
+  });
+
+  growthGrid.innerHTML="";
+  (summary.growthCards||[]).forEach(c=>{
+    const el=document.createElement("div");
+    el.className="card";
+    el.innerHTML=`<div class="card-title">${c.title}</div><div class="big-number">${c.value}</div>`;
+    growthGrid.appendChild(el);
+  });
+
+  servicesGrid.innerHTML="";
+  (summary.servicesCards||[]).forEach(c=>{
+    const el=document.createElement("div");
+    el.className="card";
+    el.innerHTML=`<div class="card-title">${c.title}</div><div class="big-number">${c.value}</div>`;
+    servicesGrid.appendChild(el);
+  });
+}
+
+async function loadAll(){
+  await checkApi();
+  const summary = await loadSummary();
+  await loadFeatures();
+  renderOverview(summary);
+}
+
+// Navigation
+const sectionMeta = {
+  overview: {t:"Genel Bakış", d:"Tüm katmanları buradan izleyip yönetebilirsin."},
+  core: {t:"Core (Beyin)", d:"Karar, analiz ve otomasyon çekirdeği."},
+  growth: {t:"Growth", d:"Büyüme ve analitik kontrol alanı."},
+  services: {t:"Services", d:"Servis sağlığı ve orkestrasyon."},
+  sharing: {t:"Sharing", d:"Paylaşım ve dağıtım otomasyonları."},
+  security: {t:"Security", d:"Güvenlik ve koruma katmanı."},
+  updating: {t:"Updating", d:"Versiyon ve güncelleme yönetimi."},
+  commands: {t:"Komutlar", d:"Ortak’a canlı komut gönder."},
+  monetization: {t:"Monetization", d:"Gelir ve ödeme katmanı."},
+  infinity: {t:"Sonsuzluk Merkezi", d:"Sınırsız bellek ve acil destek çekirdeği."},
+  users: {t:"Users", d:"Kullanıcılar ve segmentler."}
+};
+
+function showSection(key){
+  localStorage.setItem(STORAGE_SECTION_KEY, key);
+
+  document.querySelectorAll(".menu-item").forEach(b=>{
+    b.classList.toggle("active", b.dataset.section === key);
+  });
+  document.querySelectorAll("[data-view]").forEach(v=>{
+    v.classList.toggle("hidden", v.dataset.view !== key);
+  });
+
+  pageTitle.textContent = sectionMeta[key]?.t || key;
+  pageDesc.textContent  = sectionMeta[key]?.d || "";
+}
+
+menu.addEventListener("click",(e)=>{
+  const btn = e.target.closest(".menu-item");
+  if(!btn) return;
+  showSection(btn.dataset.section);
+});
+
+// Commands
+cmdSendBtn.addEventListener("click", async ()=>{
+  const cmd = (cmdInput.value||"").trim();
+  if(!cmd){
+    cmdResult.textContent = "Komut boş.";
+    return;
+  }
+  cmdResult.textContent = "Ortak komutu işliyor...";
+  await sleep(300);
+
+  if(mode==="mock" || !apiOnline){
+    cmdResult.textContent = `Mock yanıtı: "${cmd}" komutu sıraya eklendi.`;
+    cmdInput.value="";
+    return;
+  }
+
+  // basit analiz endpointiyle tetik:
+  try{
+    const res = await apiFetch("/api/ortak/analyze",{
+      method:"POST",
+      body: JSON.stringify({ command: cmd, from:"control-center" })
     });
+    cmdResult.textContent = "Live yanıtı: " + (res?.data?.message || "Komut alındı.");
+  }catch{
+    cmdResult.textContent = "Live hata. Mock’a geçebilirsin.";
   }
+  cmdInput.value="";
+});
 
-  function setActivePage(pageKey) {
-    if (!pageKey) return;
-    state.activePage = pageKey;
+// --- ORTAK CHAT ---
+function addMsg(text, who="ai"){
+  const div=document.createElement("div");
+  div.className="msg " + who;
+  div.innerHTML = `${text}<span class="meta">${nowTR()}</span>`;
+  chatBody.appendChild(div);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
 
-    $$(".nav-item").forEach(i =>
-      i.classList.toggle("active", i.dataset.page === pageKey)
-    );
-    $$(".page").forEach(p =>
-      p.classList.toggle("active", p.dataset.page === pageKey)
-    );
-
-    toast(`${labelOf(pageKey)} açıldı.`);
+function openChat(){
+  ortakModal.classList.remove("hidden");
+  chatBody.innerHTML="";
+  addMsg(`Selam Kadir. Ben Ortak Motoru. 
+  ${mode==="live" && apiOnline ? "LIVE bağlıyım, gerçek veriyi okuyorum." : "Şu an MOCK moddayım, ama paneli yine yönetiriz."}
+  Ne yapmak istersin?`, "ai");
+  if(cachedSummary){
+    addMsg(`Hızlı durum:
+    • Ziyaret: ${cachedSummary.visitsToday}
+    • Aktif: ${cachedSummary.activeUsers}
+    • Büyüme: %${cachedSummary.growthRate}`, "ai");
   }
+  chatInput.focus();
+}
 
-  function labelOf(key) {
-    const map = {
-      overview: "Genel Bakış",
-      core: "Core (Beyin)",
-      growth: "Growth",
-      services: "Services",
-      sharing: "Sharing",
-      security: "Security",
-      updating: "Updating",
-      commands: "Komutlar",
-      monetization: "Monetization",
-      infinity: "Sonsuzluk Merkezi",
-      users: "Users",
-    };
-    return map[key] || key;
-  }
+function closeChat(){
+  ortakModal.classList.add("hidden");
+}
 
-  /* ---------- Topbar ---------- */
-  function bindTopbar() {
-    on($("#btn-refresh"), "click", async () => {
-      await refreshData(true);
-      toast("Veriler yenilendi.");
-    });
+ortakOpenBtn.addEventListener("click", openChat);
+ortakCloseBtn.addEventListener("click", closeChat);
+ortakCloseBackdrop.addEventListener("click", closeChat);
 
-    on($("#btn-live"), "click", async () => {
-      state.mockMode = !state.mockMode;
-      const ok = state.mockMode ? false : await pingApi();
-      if (!ok && !state.mockMode) {
-        state.mockMode = true;
-        pushLog("Live mod denenedi ama API yok. Mock devam.");
+async function ortakReply(userText){
+  const t = userText.toLowerCase();
+
+  // niyet algısı (basit)
+  if(t.includes("durum") || t.includes("özet") || t.includes("sistem")){
+    if(mode==="live" && apiOnline){
+      try{
+        const s = await loadSummary();
+        renderOverview(s);
+        return `Canlı özet:
+        Ziyaret ${s.visitsToday}, Aktif ${s.activeUsers}, Büyüme %${s.growthRate}. 
+        Sağlık: ${ (s.health||[]).map(x=>x.name+" "+x.value).join(" / ") }`;
+      }catch{
+        return "Canlı özet çekemedim. Mock moduna alıp devam edebiliriz.";
       }
-      renderApiPill();
-      toast(state.mockMode ? "Mock moda geçildi." : "Live moda geçildi.");
-    });
-  }
-
-  function bindApiTest() {
-    on($("#api-test"), "click", async () => {
-      const ok = await pingApi();
-      toast(ok ? "API aktif ✅" : "API yok ❌");
-    });
-  }
-
-  /* ---------- Toggles ---------- */
-  function bindToggles() {
-    $$(".switch input").forEach(sw => {
-      on(sw, "change", () => {
-        const label = sw.dataset.label || "Ayar";
-        pushLog(`${label}: ${sw.checked ? "Açık" : "Kapalı"}`);
-      });
-    });
-  }
-
-  /* ---------- Command Console ---------- */
-  function bindCommands() {
-    const input = $("#cmd-input");
-    const runBtn = $("#cmd-run");
-    const clearBtn = $("#cmd-clear");
-    const tags = $$(".tag");
-
-    const run = () => {
-      const cmd = (input?.value || "").trim();
-      if (!cmd) return toast("Komut boş.");
-      handleCommand(cmd);
-      input.value = "";
-    };
-
-    on(runBtn, "click", run);
-    on(input, "keydown", (e) => e.key === "Enter" && run());
-    on(clearBtn, "click", () => setCmdOutput(""));
-    tags.forEach(t =>
-      on(t, "click", () => {
-        input.value = t.dataset.cmd || t.textContent.trim();
-        input.focus();
-      })
-    );
-  }
-
-  function handleCommand(cmd) {
-    pushLog(`Komut: ${cmd}`);
-    const stamp = nowTime();
-    let result = "";
-    const c = cmd.toLowerCase();
-
-    if (c === "status" || c.includes("durum")) {
-      result = `[#${stamp}] Durum: ${state.kpis.systemHealth}/100 | Growth: ${state.kpis.growthRate.toFixed(1)}%`;
-    } else if (c.startsWith("restart")) {
-      result = `[#${stamp}] Restart simülasyonu: ${cmd.split(" ")[1] || "core"}`;
-    } else if (c.startsWith("scale")) {
-      result = `[#${stamp}] Scale simülasyonu: ${cmd.split(" ")[1] || "auto"}`;
-    } else if (c.startsWith("help")) {
-      result =
-`[#${stamp}] Komutlar:
-- status
-- restart <service>
-- scale <auto|n>
-- help`;
-    } else {
-      result = `[#${stamp}] Ortak: “Komutu aldım: ${cmd}”`;
-    }
-
-    appendCmdOutput(result);
-  }
-
-  function setCmdOutput(text) {
-    const out = $("#cmd-output");
-    if (out) out.textContent = text;
-  }
-  function appendCmdOutput(text) {
-    const out = $("#cmd-output");
-    if (!out) return;
-    out.textContent = (out.textContent ? out.textContent + "\n\n" : "") + text;
-    out.scrollTop = out.scrollHeight;
-  }
-
-  /* ---------- Assistant ---------- */
-  function bindAssistant() {
-    on($("#assistant-qa"), "click", () =>
-      assistantSay("Sistemi taradım. Şu an stabil, büyüme sağlıklı.")
-    );
-    on($("#assistant-auto"), "click", () => {
-      assistantSay("Auto-optimizasyon (mock/live) başlatıldı.");
-    });
-    on($("#assistant-repair"), "click", () =>
-      assistantSay("Zayıf katman taraması tamamlandı. Sharing izleniyor.")
-    );
-  }
-
-  function assistantSay(text) {
-    const p = $("#ortak-summary");
-    if (p) p.textContent = text;
-    pushLog(`Ortak: ${text}`);
-  }
-
-  /* ---------- Notes ---------- */
-  function bindNotes() {
-    const ta = $("#notes-textarea");
-    const saveBtn = $("#notes-save");
-    const clearBtn = $("#notes-clear");
-
-    on(saveBtn, "click", () => {
-      localStorage.setItem("inflow_notes", ta.value);
-      toast("Not kaydedildi.");
-    });
-    on(clearBtn, "click", () => {
-      ta.value = "";
-      localStorage.removeItem("inflow_notes");
-      toast("Notlar temizlendi.");
-    });
-
-    const v = localStorage.getItem("inflow_notes");
-    if (v && ta) ta.value = v;
-  }
-
-  /* ---------- API Ping + Data ---------- */
-  async function pingApi() {
-    try {
-      const r = await fetch(`${API_BASE}/api/status`, { cache: "no-store" });
-      if (!r.ok) throw new Error("status not ok");
-      state.mockMode = false;
-      renderApiPill(true);
-      pushLog("API bağlantısı aktif.");
-      return true;
-    } catch {
-      renderApiPill(false);
-      return false;
+    }else{
+      const s = cachedSummary || getMockSummary();
+      return `Mock özet:
+      Ziyaret ${s.visitsToday}, Aktif ${s.activeUsers}, Büyüme %${s.growthRate}.`;
     }
   }
 
-  async function refreshData(forceLog) {
-    if (state.mockMode) {
-      refreshMock(forceLog);
-      renderAll();
-      return;
-    }
-
-    try {
-      // 1) Ortak summary
-      const sumR = await fetch(`${API_BASE}/api/ortak/summary`, { cache: "no-store" });
-      const sumJ = await sumR.json();
-      const summary = sumJ?.data;
-
-      if (summary) {
-        // summary içinden KPI üret
-        const m = summary.metrics || {};
-        state.kpis.activeUsers = m.activeUsers ?? 90;
-        state.kpis.growthRate = m.growthRate ?? 3.4;
-        state.kpis.systemHealth = summary.healthScore ?? summary.globalHealth ?? 80;
-
-        $("#ortak-summary").textContent = summary.summary || "Ortak özet hazır.";
-        $("#ortak-mood").textContent = summary.mood || "Sakin";
-      }
-
-      // 2) Status
-      const stR = await fetch(`${API_BASE}/api/status`, { cache: "no-store" });
-      const stJ = await stR.json();
-      const up = stJ?.uptime ? (99.0 + (Math.random()*0.9)).toFixed(1) : "99.9";
-      $("#uptime-meter").textContent = `${up}%`;
-
-      // 3) Visits’i sahadan tahmin (şu an gerçek endpoint yoksa)
-      state.kpis.todayVisits = clamp(state.kpis.todayVisits + rand(10, 80), 0, 999999);
-
-      state.lastUpdatedAt = Date.now();
-      if (forceLog) pushLog("Canlı veriler API’den çekildi.");
-      renderAll();
-    } catch (e) {
-      state.mockMode = true;
-      pushLog("API çekim hatası. Mock moda dönüldü.");
-      refreshMock(forceLog);
-      renderAll();
-    }
+  if(t.includes("live") || t.includes("mock")){
+    return `Mod şu an: ${mode.toUpperCase()}. İstersen soldaki Live/Mock düğmesiyle değiştir.`;
   }
 
-  function refreshMock(forceLog) {
-    state.kpis.todayVisits = clamp(state.kpis.todayVisits + rand(40, 140), 0, 999999);
-    state.kpis.activeUsers = clamp(state.kpis.activeUsers + rand(-5, 9), 40, 400);
-    state.kpis.growthRate = clamp(state.kpis.growthRate + (Math.random()-0.4)*0.3, 0, 99);
-    state.kpis.systemHealth = clamp(state.kpis.systemHealth + (Math.random()-0.5)*1.5, 35, 100);
-    state.lastUpdatedAt = Date.now();
-    if (forceLog) pushLog("Mock veri yenilendi.");
+  if(t.includes("core") || t.includes("beyin")){
+    return "Core katmanı canlı. İstersen Core sekmesinden detayları açalım, hedef kural seti tanımlayalım.";
   }
 
-  /* ---------- Ticker ---------- */
-  function startTicker() {
-    setInterval(() => refreshData(false), 5000);
+  if(t.includes("growth") || t.includes("büyüme")){
+    return "Growth’ta şu an trend yukarı. İstersen hedef KPI’ları kilitleyip otomatik rapor açayım.";
   }
 
-  /* ---------- Render ---------- */
-  function renderAll() {
-    renderApiPill();
-    renderKpis();
-    renderServices();
-    renderMiniStats();
-    renderLogs();
-    renderLastUpdate();
-  }
+  // genel cevap
+  return `Anladım. "${userText}" konusunu kaydettim. 
+  İstersen bunu bir komuta çevirip katmanlara dağıtabilirim. Ne yönde ilerleyelim?`;
+}
 
-  function renderApiPill(liveOk = !state.mockMode) {
-    const pill = $("#api-pill");
-    if (!pill) return;
-    const dot = $(".dot", pill);
-    const txt = $(".api-text", pill);
+async function sendChat(){
+  const userText=(chatInput.value||"").trim();
+  if(!userText) return;
+  addMsg(userText,"user");
+  chatInput.value="";
 
-    if (dot) {
-      dot.style.background = liveOk ? "#22c55e" : "#ef4444";
-      dot.style.boxShadow = liveOk
-        ? "0 0 12px rgba(34,197,94,0.9)"
-        : "0 0 12px rgba(239,68,68,0.9)";
-    }
-    if (txt) {
-      txt.textContent = liveOk
-        ? "API bağlantısı aktif (live)"
-        : "API bağlantısı yok (mock mod)";
-    }
-  }
+  // typing efekti
+  const typing=document.createElement("div");
+  typing.className="msg ai";
+  typing.textContent="Ortak düşünüyor...";
+  chatBody.appendChild(typing);
+  chatBody.scrollTop = chatBody.scrollHeight;
 
-  function renderKpis() {
-    setText("#kpi-todayVisits", fmt(state.kpis.todayVisits));
-    setText("#kpi-activeUsers", fmt(state.kpis.activeUsers));
-    setText("#kpi-growthRate", `${state.kpis.growthRate.toFixed(1)}%`);
-    setText("#kpi-systemHealth", `${Math.round(state.kpis.systemHealth)}/100`);
-  }
+  await sleep(350);
 
-  function renderServices() {
-    const list = $("#service-list");
-    if (!list) return;
-    list.innerHTML = "";
-    state.services.forEach(s => {
-      const row = document.createElement("div");
-      row.className = "status-row";
-      row.innerHTML = `
-        <div>
-          <div class="status-title">${s.name}</div>
-          <div class="status-desc">${serviceDesc(s.status)}</div>
-        </div>
-        <div class="pill ${s.status}">${serviceLabel(s.status)}</div>
-      `;
-      list.appendChild(row);
-    });
-  }
+  typing.remove();
+  const reply = await ortakReply(userText);
+  addMsg(reply,"ai");
+}
 
-  function renderMiniStats() {
-    setText("#mini-health", Math.round(state.kpis.systemHealth));
-    setText("#mini-state", state.kpis.systemHealth > 75 ? "Kararlı" : "Dikkat");
-    setText("#mini-uptime", `${clamp(92 + state.kpis.systemHealth/10, 92, 99.9).toFixed(1)}%`);
-    setText("#mini-latency", `${clamp(520 - state.kpis.systemHealth*1.2, 250, 520).toFixed(0)}ms`);
-    setText("#mini-error", `${clamp(1.5 - state.kpis.systemHealth*0.01, 0, 1.5).toFixed(2)}%`);
-  }
+chatSendBtn.addEventListener("click", sendChat);
+chatInput.addEventListener("keydown",(e)=>{
+  if(e.key==="Enter") sendChat();
+});
 
-  function renderLogs() {
-    const ul = $("#log-list");
-    const count = $("#log-count");
-    if (!ul) return;
-    ul.innerHTML = "";
-    state.logs.slice(-50).forEach(l => {
-      const li = document.createElement("li");
-      li.className = "log-item";
-      li.innerHTML = `<div class="log-time">${l.t}</div><div class="log-text">${escapeHtml(l.m)}</div>`;
-      ul.appendChild(li);
-    });
-    if (count) count.textContent = `${state.logs.length} kayıt`;
-  }
+// Buttons
+refreshBtn.addEventListener("click", loadAll);
+toggleModeBtn.addEventListener("click", ()=>{
+  setMode(mode==="live" ? "mock" : "live");
+});
 
-  function renderLastUpdate() {
-    setText("#last-updated", nowTime());
-  }
-
-  function setText(sel, text) {
-    const el = $(sel);
-    if (el) el.textContent = text;
-  }
-
-  function serviceDesc(status) {
-    return status === "ok" ? "Sağlıklı çalışıyor"
-      : status === "warn" ? "İzleniyor / optimize ediliyor"
-      : "Sorun tespit edildi";
-  }
-  function serviceLabel(status) {
-    return status === "ok" ? "OK"
-      : status === "warn" ? "DİKKAT"
-      : "HATA";
-  }
-
-  function pushLog(message) {
-    state.logs.push({ t: nowTime(), m: message });
-  }
-
-  function toast(message) {
-    const t = $("#toast");
-    const inner = $("#toast-inner");
-    if (!t || !inner) return;
-    inner.textContent = message;
-    t.classList.add("show");
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => t.classList.remove("show"), 1600);
-  }
-
-  function rand(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  function escapeHtml(str) {
-    return String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+// Init
+(function init(){
+  renderModeUI();
+  loadAll();
+  const lastSection = localStorage.getItem(STORAGE_SECTION_KEY) || "overview";
+  showSection(lastSection);
 })();
