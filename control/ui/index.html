@@ -8,166 +8,138 @@
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
+    <!-- Sol Mini Menü (sade) -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo"></div>
+        <div class="logo"></div>
         <div class="brand-text">
           <div class="brand-title">InflowAI</div>
-          <div class="brand-sub">Kontrol Merkezi</div>
+          <div class="brand-sub">Kontrol Merkezi — ORTAK</div>
         </div>
       </div>
 
       <nav class="nav">
-        <button class="nav-item active" data-tab="overview">
-          <span class="dot"></span> Genel Bakış
-        </button>
-        <button class="nav-item" data-tab="core">
-          <span class="dot"></span> Core (Beyin)
-        </button>
-        <button class="nav-item" data-tab="growth">
-          <span class="dot"></span> Growth
-        </button>
-        <button class="nav-item" data-tab="services">
-          <span class="dot"></span> Services
-        </button>
-        <button class="nav-item" data-tab="sharing">
-          <span class="dot"></span> Sharing
-        </button>
-        <button class="nav-item" data-tab="security">
-          <span class="dot"></span> Security
-        </button>
-        <button class="nav-item" data-tab="updating">
-          <span class="dot"></span> Updating
-        </button>
-        <button class="nav-item" data-tab="commands">
-          <span class="dot"></span> Komutlar
-        </button>
-        <button class="nav-item" data-tab="monetization">
-          <span class="dot"></span> Monetization
-        </button>
-        <button class="nav-item" data-tab="infinite">
-          <span class="dot"></span> Sonsuzluk Merkezi
+        <button class="nav-item active" data-view="ortak">
+          <span class="dot"></span>
+          <span>ORTAK</span>
         </button>
       </nav>
 
-      <div class="sidebar-footer">
-        <div class="pill small">UI v1.1</div>
-        <div class="pill small" id="apiModePill">API mock</div>
+      <div class="side-footer">
+        <div class="pill">UI v1.2</div>
+        <div class="pill" id="apiModePill">API live</div>
       </div>
     </aside>
 
-    <!-- Main -->
+    <!-- Ana Alan -->
     <main class="main">
-      <!-- Top bar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <div class="title">InflowAI Kontrol Merkezi</div>
-          <div class="subtitle">ORTAK Motoru — Özellik Yönetimi</div>
+      <!-- Üst Bar -->
+      <header class="topbar card glass">
+        <div class="top-left">
+          <h1>InflowAI Kontrol Merkezi</h1>
+          <p>ORTAK Motoru — Özellik Yönetimi</p>
         </div>
-        <div class="topbar-right">
-          <div class="api-chip" id="apiChip">
-            <span class="api-dot" id="apiDot"></span>
-            <span id="apiText">API bağlanıyor…</span>
+
+        <div class="top-right">
+          <div class="api-status" id="apiStatus">
+            <span class="status-dot" id="apiDot"></span>
+            <div>
+              <div class="status-title">API bağlantısı</div>
+              <div class="status-sub" id="apiText">Kontrol ediliyor...</div>
+            </div>
           </div>
-          <button class="btn ghost" id="refreshBtn">Yenile</button>
+          <button class="btn" id="refreshBtn">Yenile</button>
         </div>
       </header>
 
-      <!-- Content -->
-      <section class="content">
+      <!-- Grid -->
+      <section class="grid">
+        <!-- ORTAK ÖZETİ -->
+        <article class="card glass">
+          <div class="card-head">
+            <h2>Ortak Özeti</h2>
+            <span class="mini" id="checkedAt">—</span>
+          </div>
 
-        <!-- ORTAK PANEL -->
-        <div class="card ortak-card">
-          <div class="card-header">
-            <div class="card-title">
-              <span class="icon">🤖</span>
-              ORTAK Paneli
+          <div class="summary-row">
+            <div class="summary-box">
+              <div class="label">Ruh Hâli</div>
+              <div class="value" id="moodValue">—</div>
+              <div class="sub" id="moodReason">—</div>
             </div>
-            <div class="card-actions">
-              <label class="switch">
-                <input type="checkbox" id="ortakToggle" />
-                <span class="slider"></span>
-              </label>
-              <span class="pill" id="ortakStatePill">PASİF</span>
+            <div class="summary-box">
+              <div class="label">Sağlık Skoru</div>
+              <div class="value" id="healthValue">—</div>
+              <div class="sub">Ortak analizinden</div>
+            </div>
+            <div class="summary-box">
+              <div class="label">Son Güncelleme</div>
+              <div class="value" id="lastUpdate">—</div>
+              <div class="sub">UI saatine göre</div>
             </div>
           </div>
 
-          <div class="card-body grid-2">
-            <div class="mini-card">
-              <div class="mini-title">Ortak Özeti</div>
-              <div class="mini-text" id="ortakSummaryText">Ortak özet üretiyor…</div>
-              <div class="mini-kpis">
-                <div class="kpi">
-                  <div class="kpi-label">Ruh Hâli</div>
-                  <div class="kpi-value" id="ruhHali">—</div>
-                </div>
-                <div class="kpi">
-                  <div class="kpi-label">Sağlık Skoru</div>
-                  <div class="kpi-value" id="saglikSkoru">—</div>
-                </div>
-                <div class="kpi">
-                  <div class="kpi-label">Son Güncelleme</div>
-                  <div class="kpi-value" id="sonGuncelleme">—</div>
-                </div>
-              </div>
-            </div>
+          <div class="divider"></div>
 
-            <div class="mini-card">
-              <div class="mini-title">Ortak'ın Önerileri</div>
-              <ul class="list" id="ortakOneriList">
-                <li class="muted">Ortak öneri hazırlıyor…</li>
-              </ul>
-            </div>
+          <div class="hero-note" id="summaryNote">
+            Ortak özet üretiyor...
           </div>
-        </div>
+        </article>
 
         <!-- PLATFORM GÖMÜLÜ ÖZELLİKLER -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">
-              <span class="icon">🧠</span>
-              Platform Gömülü Özellikler
+        <article class="card glass">
+          <div class="card-head">
+            <h2>Platform Gömülü Özellikler</h2>
+            <span class="mini" id="embeddedCount">0 özellik</span>
+          </div>
+
+          <ul class="feature-list" id="embeddedList">
+            <li class="empty">Yükleniyor...</li>
+          </ul>
+        </article>
+
+        <!-- ORTAK'IN BULDUĞU / ÖNERDİĞİ ÖZELLİKLER -->
+        <article class="card glass">
+          <div class="card-head">
+            <h2>Ortak’ın Bulduğu / Önerdiği Özellikler</h2>
+            <span class="mini" id="suggestedCount">0 özellik</span>
+          </div>
+
+          <ul class="feature-list" id="suggestedList">
+            <li class="empty">Yükleniyor...</li>
+          </ul>
+        </article>
+
+        <!-- ORTAK KONUŞMA PANELİ -->
+        <article class="card glass chat-card">
+          <div class="card-head">
+            <h2>Ortak Konuşma</h2>
+            <div class="chat-actions">
+              <button class="btn ghost" id="clearChatBtn">Temizle</button>
+              <button class="btn" id="openChatBtn">Konuş</button>
             </div>
-            <div class="pill" id="platformCount">0 özellik</div>
           </div>
 
-          <div class="card-body" id="platformFeatures">
-            <!-- JS dolduracak -->
-          </div>
-        </div>
+          <div class="chat-window" id="chatWindow"></div>
 
-        <!-- ORTAK'IN BULDUĞU ÖZELLİKLER -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">
-              <span class="icon">✨</span>
-              Ortak'ın Bulduğu / Önerdiği Özellikler
-            </div>
-            <div class="pill warn" id="ortakCount">0 özellik</div>
+          <div class="chat-input">
+            <input id="chatInput" type="text" placeholder="Ortak'a bir şey sor..." />
+            <button class="btn" id="sendChatBtn">Gönder</button>
           </div>
 
-          <div class="card-body">
-            <ul class="list" id="ortakFoundList">
-              <li class="muted">Ortak aktif olunca burada öneriler görünür.</li>
-            </ul>
+          <div class="chat-hint">
+            Not: Şu an konuşma UI içinde çalışır. İleride API’ye chat endpoint ekleyince buradan bağlayacağız.
           </div>
-        </div>
+        </article>
 
         <!-- CANLI GÜNLÜK -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">
-              <span class="icon">📜</span>
-              Canlı Günlük
-            </div>
-            <div class="pill" id="logCount">0 kayıt</div>
+        <article class="card glass log-card">
+          <div class="card-head">
+            <h2>Canlı Günlük</h2>
+            <span class="mini" id="logCount">0 kayıt</span>
           </div>
-          <div class="card-body">
-            <div class="log" id="logBox"></div>
-          </div>
-        </div>
-
+          <pre class="log" id="logBox"></pre>
+        </article>
       </section>
     </main>
   </div>
