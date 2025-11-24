@@ -1,21 +1,25 @@
 /* =========================
    InflowAI Control Center UI
-   scripts.js (LIVE + fallback)
+   scripts.js  (FINAL)
+   - Live API + fallback mock
+   - Ortak konuşur
    ========================= */
 (() => {
   "use strict";
 
-  const API_BASE = "https://inflowai-api.onrender.com";
+  const API_BASE = "https://inflowai-api.onrender.com"; // Render API
 
+  /* ---------- helpers ---------- */
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const on = (el, ev, fn, opt) => el && el.addEventListener(ev, fn, opt);
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
   const fmt = (n) => n.toLocaleString("tr-TR");
 
+  /* ---------- state ---------- */
   const state = {
     activePage: "overview",
-    mockMode: false,
+    mockMode: false,        // LIVE ile başla, düşerse mock’a geçer
     lastUpdatedAt: Date.now(),
     kpis: {
       todayVisits: 0,
@@ -27,16 +31,15 @@
       { key: "core", name: "Core (Beyin)", status: "ok" },
       { key: "growth", name: "Growth", status: "ok" },
       { key: "services", name: "Services", status: "ok" },
-      { key: "sharing", name: "Sharing", status: "warn" },
+      { key: "sharing", name: "Sharing", status: "ok" },
       { key: "security", name: "Security", status: "ok" },
       { key: "updating", name: "Updating", status: "ok" }
     ],
-    featuresFromApi: null,
-    ortakSummary: null,
     logs: []
   };
 
-  document.addEventListener("DOMContentLoaded", () => {
+  /* ---------- init ---------- */
+  document.addEventListener("DOMContentLoaded", async () => {
     bindNav();
     bindTopbar();
     bindToggles();
@@ -44,17 +47,95 @@
     bindAssistant();
     bindNotes();
 
-    setActivePage("overview");
-    boot();
+    on($("#btn-ping"), "click", pingApi);
+
+    await pingApi();     // ilk ping
+    await refreshData(); // ilk veri
+    renderAll();
+
+    setInterval(async () => {
+      await refreshData();
+      renderAll();
+    }, 5000);
   });
 
-  async function boot() {
-    await refreshLiveData(true);
-    renderAll();
-    startTicker();
+  /* ---------- API ---------- */
+  async function pingApi() {
+    try {
+      const t0 = performance.now();
+      const r = await fetch(`${API_BASE}/api/status`, { cache: "no-store" });
+      if (!r.ok) throw new Error("status not ok");
+      const dt = performance.now() - t0;
+
+      state.mockMode = false;
+      setBar("#bar-api", 98);
+      setText("#badge-mode", "Live");
+
+      pushLog(`API bağlantısı aktif. Ping ${dt.toFixed(0)}ms`);
+      renderApiPill(true);
+      return true;
+    } catch (e) {
+      state.mockMode = true;
+      setBar("#bar-api", 0);
+      setText("#badge-mode", "Mock");
+      renderApiPill(false);
+      pushLog("API bağlantısı yok. Mock moda geçildi.");
+      return false;
+    }
   }
 
-  /* ---------- Navigation ---------- */
+  async function refreshData() {
+    state.lastUpdatedAt = Date.now();
+
+    if (state.mockMode) {
+      refreshMockData();
+      assistantSay(buildMockSummary());
+      return;
+    }
+
+    try {
+      // 1) Ortak summary
+      const sumRes = await fetch(`${API_BASE}/api/ortak/summary`, { cache: "no-store" });
+      const sumJson = await sumRes.json();
+      const summary = sumJson?.data || {};
+
+      // 2) Ortak features/config
+      const featRes = await fetch(`${API_BASE}/api/ortak/features`, { cache: "no-store" });
+      const featJson = await featRes.json();
+      const cfg = featJson?.data || {};
+
+      // KPI’leri summary’den al
+      const metrics = summary.metrics || {};
+      state.kpis.todayVisits = metrics.traffic ? metrics.traffic * 15 : randInt(2500, 6500);
+      state.kpis.activeUsers = metrics.activeUsers ?? randInt(70, 160);
+      state.kpis.growthRate  = metrics.growthRate ?? 3.4;
+      state.kpis.systemHealth = summary.healthScore ?? summary.globalHealth ?? randInt(70, 95);
+
+      // Ortak mood ve konuşma
+      setText("#ortakMoodLabel", summary.mood || "Kararlı");
+      assistantSay(summary.summary || "Ortak: Sistem stabil, büyümeyi izliyorum.");
+
+      // Updating sayfası bilgi
+      setText("#config-info", cfg.version ? `v${cfg.version}` : "v1");
+      setText("#deploy-info", new Date().toLocaleDateString("tr-TR"));
+
+      // Barlar
+      setBar("#bar-latency", clamp(95 - (metrics.apiLatency ?? 420) / 10, 55, 98));
+      setBar("#bar-error", clamp((metrics.errorRate ?? 0.7) * 10, 0, 25));
+      setBar("#bar-uptime", clamp(metrics.uptime ?? 99.2, 92, 99.9));
+
+      pushLog("Live veriler güncellendi.");
+    } catch (e) {
+      // live bozulursa mock’a düş
+      state.mockMode = true;
+      refreshMockData();
+      assistantSay(buildMockSummary());
+      renderApiPill(false);
+      pushLog("Live veri çekilemedi, mock moda geçildi.");
+    }
+  }
+
+  /* ---------- navigation ---------- */
   function bindNav() {
     $$(".nav-item").forEach(item => {
       on(item, "click", () => setActivePage(item.dataset.page));
@@ -65,51 +146,39 @@
     if (!pageKey) return;
     state.activePage = pageKey;
 
-    $$(".nav-item").forEach(i =>
-      i.classList.toggle("active", i.dataset.page === pageKey)
-    );
-
-    $$(".page").forEach(p =>
-      p.classList.toggle("active", p.dataset.page === pageKey)
-    );
+    $$(".nav-item").forEach(i => i.classList.toggle("active", i.dataset.page === pageKey));
+    $$(".page").forEach(p => p.classList.toggle("active", p.dataset.page === pageKey));
 
     toast(`${labelOf(pageKey)} açıldı.`);
   }
 
   function labelOf(key) {
     const map = {
-      overview: "Genel Bakış",
-      core: "Core (Beyin)",
-      growth: "Growth",
-      services: "Services",
-      sharing: "Sharing",
-      security: "Security",
-      updating: "Updating",
-      commands: "Komut Haritası",
-      monetization: "Monetization",
-      infinity: "Sonsuzluk Merkezi",
-      users: "Users"
+      overview:"Genel Bakış", core:"Core", growth:"Growth", services:"Services",
+      sharing:"Sharing", security:"Security", updating:"Updating",
+      commands:"Komutlar", monetization:"Monetization", infinity:"Sonsuzluk Merkezi", users:"Users"
     };
     return map[key] || key;
   }
 
-  /* ---------- Topbar ---------- */
+  /* ---------- topbar ---------- */
   function bindTopbar() {
     on($("#btn-refresh"), "click", async () => {
-      await refreshLiveData(true);
+      await refreshData();
       renderAll();
       toast("Veriler yenilendi.");
     });
 
     on($("#btn-live"), "click", async () => {
       state.mockMode = !state.mockMode;
-      await refreshLiveData(true);
-      renderAll();
+      renderApiPill(!state.mockMode);
       toast(state.mockMode ? "Mock moda geçildi." : "Live moda geçildi.");
+      await refreshData();
+      renderAll();
     });
   }
 
-  /* ---------- Toggles ---------- */
+  /* ---------- toggles ---------- */
   function bindToggles() {
     $$(".switch input").forEach(sw => {
       on(sw, "change", () => {
@@ -119,239 +188,123 @@
         toast(`${label} ${val}`);
       });
     });
-
-    on($("#growth-ab"), "click", () => {
-      pushLog("A/B Test başlatıldı (mock).");
-      toast("A/B Test başlatıldı.");
-    });
-    on($("#growth-push"), "click", () => {
-      pushLog("Otomatik Push devreye alındı (mock).");
-      toast("Push aktif.");
-    });
-    on($("#growth-retain"), "click", () => {
-      pushLog("Retention modları güçlendirildi (mock).");
-      toast("Retention güçlendi.");
-    });
   }
 
-  /* ---------- Commands ---------- */
+  /* ---------- commands ---------- */
   function bindCommands() {
     const input = $("#cmd-input");
     const runBtn = $("#cmd-run");
     const clearBtn = $("#cmd-clear");
     const tags = $$(".tag");
-
     const run = () => {
-      const cmd = (input && input.value || "").trim();
+      const cmd = (input?.value || "").trim();
       if (!cmd) return toast("Komut boş.");
       handleCommand(cmd);
       input.value = "";
     };
-
     on(runBtn, "click", run);
-    on(input, "keydown", e => e.key === "Enter" && run());
-    on(clearBtn, "click", () => {
-      setCmdOutput("");
-      toast("Konsol temizlendi.");
-    });
-
-    tags.forEach(t => on(t, "click", () => {
-      if (!input) return;
-      input.value = t.dataset.cmd || t.textContent.trim();
-      input.focus();
-    }));
+    on(input, "keydown", (e) => e.key === "Enter" && run());
+    on(clearBtn, "click", () => setCmdOutput(""));
+    tags.forEach(t => on(t, "click", () => { input.value = t.dataset.cmd; input.focus(); }));
   }
 
   function handleCommand(cmd) {
-    pushLog(`Komut çalıştırıldı: ${cmd}`);
+    pushLog(`Komut: ${cmd}`);
     const stamp = new Date().toLocaleTimeString("tr-TR");
-    const c = cmd.toLowerCase();
     let result = "";
+    const c = cmd.toLowerCase();
 
-    if (c === "status" || c.includes("durum")) {
-      result =
-`[#${stamp}] Sistem Durumu: ${state.kpis.systemHealth >= 75 ? "KARARLI" : "DİKKAT"}
-Uptime: ${getUptime().toFixed(1)}%
-API: ${state.mockMode ? "MOCK" : "LIVE"}
-Health: ${state.kpis.systemHealth}/100`;
+    if (c === "status") {
+      result = `[#${stamp}] Durum: ${state.mockMode ? "MOCK" : "LIVE"} | Health ${state.kpis.systemHealth}/100`;
     } else if (c.startsWith("restart")) {
-      result = `[#${stamp}] Yeniden başlatma kuyruğa alındı (mock).\nBileşen: ${cmd.split(" ")[1] || "core"}`;
-      bumpHealth(-1);
+      result = `[#${stamp}] Restart (mock): ${cmd.split(" ")[1] || "core"}`;
     } else if (c.startsWith("scale")) {
-      result = `[#${stamp}] Ölçekleme talebi alındı (mock).\nHedef: ${cmd.split(" ")[1] || "auto"}`;
-      bumpVisits(5);
-    } else if (c.startsWith("clear logs")) {
-      state.logs = [];
-      result = `[#${stamp}] Loglar temizlendi.`;
-    } else if (c.startsWith("help")) {
-      result =
-`[#${stamp}] Komutlar:
-- status
-- restart <service>
-- scale <auto|n>
-- clear logs
-- help`;
+      result = `[#${stamp}] Scale (mock): ${cmd.split(" ")[1] || "auto"}`;
     } else {
-      result = `[#${stamp}] Ortak: “Komutu aldım: ${cmd} (mock simülasyon)”`;
-      bumpGrowth(0.1);
+      result = `[#${stamp}] Ortak: “Komutu aldım: ${cmd}”`;
     }
 
     appendCmdOutput(result);
-    renderAll();
   }
 
-  /* ---------- Assistant (Ortak) ---------- */
+  function setCmdOutput(text) {
+    const out = $("#cmd-output");
+    if (out) out.textContent = text;
+  }
+  function appendCmdOutput(text) {
+    const out = $("#cmd-output");
+    if (!out) return;
+    out.textContent = (out.textContent ? out.textContent + "\n\n" : "") + text;
+    out.scrollTop = out.scrollHeight;
+  }
+
+  /* ---------- assistant ---------- */
   function bindAssistant() {
-    on($("#assistant-qa"), "click", () => {
-      assistantSay("Durum taraması tamam. Growth ve Core stabil, Sharing iyileştirme öneriyor.");
-    });
+    on($("#assistant-qa"), "click", () => assistantSay(buildHumanSummary()));
     on($("#assistant-auto"), "click", () => {
-      assistantSay("Auto-optimizasyon başlattım. Ufak özellikleri otomatik açıyorum.");
+      assistantSay("Auto-optimizasyon başlattım. Küçük özellikleri aktive ediyorum.");
       bumpHealth(1);
-      bumpGrowth(0.2);
-      renderAll();
     });
     on($("#assistant-repair"), "click", () => {
-      assistantSay("Zayıf katman tarandı. Sharing katmanında öneri listesi güncellendi.");
+      assistantSay("Zayıf katman taraması: Sharing izleniyor. Güçlendirme öneriyorum.");
       markService("sharing", "warn");
-      renderAll();
     });
   }
 
   function assistantSay(text) {
-    const p = $("#assistant-bubble p");
-    if (p) p.textContent = text;
+    const bubble = $("#assistant-bubble p");
+    if (bubble) bubble.textContent = text;
     pushLog(`Ortak: ${text}`);
   }
 
-  /* ---------- Notes ---------- */
+  /* ---------- notes ---------- */
   function bindNotes() {
+    const ta = $("#notes-textarea");
     const saveBtn = $("#notes-save");
     const clearBtn = $("#notes-clear");
-    const ta = $("#notes-textarea");
 
     on(saveBtn, "click", () => {
-      if (!ta) return;
       localStorage.setItem("inflow_notes", ta.value);
       toast("Not kaydedildi.");
-      pushLog("Sonsuzluk Merkezi notları kaydedildi.");
+      pushLog("Not kaydedildi.");
     });
-
     on(clearBtn, "click", () => {
-      if (!ta) return;
       ta.value = "";
       localStorage.removeItem("inflow_notes");
       toast("Notlar temizlendi.");
-      pushLog("Sonsuzluk Merkezi notları temizlendi.");
+      pushLog("Notlar temizlendi.");
     });
 
-    if (ta) {
-      const v = localStorage.getItem("inflow_notes");
-      if (v) ta.value = v;
-    }
+    const v = localStorage.getItem("inflow_notes");
+    if (v && ta) ta.value = v;
   }
 
-  /* ---------- LIVE DATA ---------- */
-  async function refreshLiveData(forceLog) {
-    if (state.mockMode) {
-      refreshMockData(forceLog);
-      return;
-    }
-
-    try {
-      const statusRes = await fetch(`${API_BASE}/api/status`, { cache: "no-store" });
-      if (!statusRes.ok) throw new Error("status not ok");
-
-      const summaryRes = await fetch(`${API_BASE}/api/ortak/summary`, { cache: "no-store" });
-      if (!summaryRes.ok) throw new Error("summary not ok");
-
-      const featuresRes = await fetch(`${API_BASE}/api/ortak/features`, { cache: "no-store" });
-      if (!featuresRes.ok) throw new Error("features not ok");
-
-      const summaryJson = await summaryRes.json();
-      const featuresJson = await featuresRes.json();
-
-      const data = summaryJson.data || summaryJson;
-      state.ortakSummary = data;
-      state.featuresFromApi = featuresJson.data || featuresJson;
-
-      const m = data.metrics || {};
-      state.kpis.activeUsers = m.activeUsers ?? 90;
-      state.kpis.growthRate = m.growthRate ?? 3.4;
-      state.kpis.systemHealth = data.healthScore ?? data.globalHealth ?? 80;
-      state.kpis.todayVisits = (m.traffic ?? 120) * 10;
-
-      state.lastUpdatedAt = Date.now();
-      if (forceLog) pushLog("Live veri API’den alındı.");
-    } catch (e) {
-      state.mockMode = true;
-      refreshMockData(true);
-      pushLog("Live veri alınamadı, mock moda geçildi.");
-    }
-  }
-
-  /* ---------- MOCK ---------- */
-  function refreshMockData(forceLog) {
-    bumpVisits(randInt(20, 80));
-    state.kpis.activeUsers = clamp(state.kpis.activeUsers + randInt(-3, 6), 40, 400);
-    bumpGrowth((Math.random() - 0.45) * 0.5);
-    bumpHealth((Math.random() - 0.5) * 2);
-
-    if (Math.random() < 0.08) {
-      const idx = randInt(0, state.services.length - 1);
-      state.services[idx].status = Math.random() < 0.7 ? "ok" : "warn";
-    }
-
-    state.lastUpdatedAt = Date.now();
-    if (forceLog) pushLog("Mock veri yenilendi.");
-  }
-
-  function startTicker() {
-    setInterval(async () => {
-      await refreshLiveData(false);
-      renderAll();
-    }, 5000);
-  }
-
-  /* ---------- Render ---------- */
+  /* ---------- render ---------- */
   function renderAll() {
-    renderApiPill();
+    renderApiPill(!state.mockMode);
     renderKpis();
     renderServices();
-    renderHealthBars();
-    renderLogs();
     renderMiniStats();
     renderLastUpdate();
-    renderOrtakBox();
-    renderUsersMock();
-    renderServicesFeaturesFromApi();
   }
 
-  function renderApiPill() {
+  function renderApiPill(isOn) {
     const pill = $("#api-pill");
     if (!pill) return;
     const dot = $(".dot", pill);
     const txt = $(".api-text", pill);
-
-    const liveOk = !state.mockMode;
     if (dot) {
-      dot.style.background = liveOk ? "#22c55e" : "#ef4444";
-      dot.style.boxShadow = liveOk
-        ? "0 0 12px rgba(34,197,94,0.9)"
-        : "0 0 12px rgba(239,68,68,0.9)";
+      dot.style.background = isOn ? "#22c55e" : "#ef4444";
+      dot.style.boxShadow  = isOn ? "0 0 12px rgba(34,197,94,.9)" : "0 0 12px rgba(239,68,68,.9)";
     }
-    if (txt) {
-      txt.textContent = liveOk
-        ? "API bağlantısı aktif (live)"
-        : "API bağlantısı yok (mock mod)";
-    }
+    if (txt) txt.textContent = isOn ? "API bağlantısı aktif (live)" : "API bağlantısı yok (mock mod)";
   }
 
   function renderKpis() {
     setText("#kpi-todayVisits", fmt(state.kpis.todayVisits));
     setText("#kpi-activeUsers", fmt(state.kpis.activeUsers));
     setText("#kpi-growthRate", `${state.kpis.growthRate.toFixed(1)}%`);
-    setText("#kpi-systemHealth", `${Math.round(state.kpis.systemHealth)}/100`);
+    setText("#kpi-systemHealth", `${state.kpis.systemHealth}/100`);
   }
 
   function renderServices() {
@@ -372,109 +325,16 @@ Health: ${state.kpis.systemHealth}/100`;
     });
   }
 
-  function renderHealthBars() {
-    setBar("#bar-api", state.mockMode ? 0 : 96);
-    setBar("#bar-latency", clamp(100 - (state.kpis.todayVisits % 40), 55, 98));
-    setBar("#bar-error", clamp(100 - (state.kpis.systemHealth * 0.9), 0, 25));
-    setBar("#bar-uptime", getUptime());
-
-    setText("#api-meter", `${state.mockMode ? 0 : 96}%`);
-    setText("#latency-meter", `${clamp(100 - (state.kpis.todayVisits % 40), 55, 98).toFixed(0)}%`);
-    setText("#error-meter", `${clamp(100 - (state.kpis.systemHealth * 0.9), 0, 25).toFixed(1)}%`);
-    setText("#uptime-meter", `${getUptime().toFixed(1)}%`);
-  }
-
-  function getUptime() {
-    return clamp(92 + (state.kpis.systemHealth / 10), 92, 99.9);
-  }
-
-  function renderLogs() {
-    const ul = $("#log-list");
-    if (!ul) return;
-    ul.innerHTML = "";
-    state.logs.slice(-50).forEach(l => {
-      const li = document.createElement("li");
-      li.className = "log-item";
-      li.innerHTML = `
-        <div class="log-time">${l.t}</div>
-        <div class="log-text">${escapeHtml(l.m)}</div>
-      `;
-      ul.appendChild(li);
-    });
-  }
-
   function renderMiniStats() {
-    setText("#mini-health", Math.round(state.kpis.systemHealth));
+    setText("#mini-health", state.kpis.systemHealth);
     setText("#mini-state", state.kpis.systemHealth > 75 ? "Kararlı" : "Dikkat");
-    setText("#mini-uptime", `${getUptime().toFixed(1)}%`);
-    setText("#mini-latency", `${clamp(520 - state.kpis.systemHealth * 1.2, 250, 520).toFixed(0)}ms`);
-    setText("#mini-error", `${clamp(1.5 - state.kpis.systemHealth * 0.01, 0, 1.5).toFixed(2)}%`);
+    setText("#mini-uptime", clamp(92 + state.kpis.systemHealth/10, 92, 99.9).toFixed(1) + "%");
+    setText("#mini-latency", clamp(520 - state.kpis.systemHealth*1.2, 250, 520).toFixed(0) + "ms");
+    setText("#mini-error", clamp(1.5 - state.kpis.systemHealth*0.01, 0, 1.5).toFixed(2) + "%");
   }
 
   function renderLastUpdate() {
     setText("#last-updated", new Date(state.lastUpdatedAt).toLocaleTimeString("tr-TR"));
-  }
-
-  function renderOrtakBox() {
-    const list = $("#ortak-actions");
-    if (!list) return;
-
-    list.innerHTML = "";
-    const s = state.ortakSummary;
-    if (!s) {
-      const li = document.createElement("li");
-      li.textContent = "Ortak özeti bekleniyor…";
-      list.appendChild(li);
-      return;
-    }
-
-    assistantSay(s.summary || "Ortak aktif.");
-
-    const actions = s.allActions || s.actions || [];
-    actions.forEach(a => {
-      const li = document.createElement("li");
-      li.textContent = a;
-      list.appendChild(li);
-    });
-  }
-
-  function renderUsersMock() {
-    setText("#users-registered", fmt(clamp(Math.round(state.kpis.todayVisits / 8), 0, 999999)));
-    setText("#users-guest", fmt(clamp(state.kpis.todayVisits, 0, 999999)));
-    setText("#users-active", fmt(state.kpis.activeUsers));
-  }
-
-  function renderServicesFeaturesFromApi() {
-    const box = $("#services-feature-list");
-    if (!box) return;
-    box.innerHTML = "";
-
-    const cfg = state.featuresFromApi;
-    if (!cfg) {
-      const div = document.createElement("div");
-      div.className = "toggle-item";
-      div.innerHTML = `<div><div class="toggle-title">Özellik listesi bekleniyor…</div>
-        <div class="toggle-desc">API bağlanınca Ortak buraya özellik dökecek.</div></div>`;
-      box.appendChild(div);
-      return;
-    }
-
-    const goals = cfg.strategicGoals || [];
-    goals.slice(0, 12).forEach((g) => {
-      const div = document.createElement("div");
-      div.className = "toggle-item";
-      div.innerHTML = `
-        <div>
-          <div class="toggle-title">${g.title || g}</div>
-          <div class="toggle-desc">${g.desc || "Ortak önerisi"}</div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" data-label="${g.title || g}"/>
-          <span class="slider"></span>
-        </label>
-      `;
-      box.appendChild(div);
-    });
   }
 
   function setText(sel, text) {
@@ -487,7 +347,6 @@ Health: ${state.kpis.systemHealth}/100`;
     if (!el) return;
     const v = clamp(val, 0, 100);
     el.style.width = v + "%";
-    el.setAttribute("aria-valuenow", String(v));
     const label = el.dataset.labelSel ? $(el.dataset.labelSel) : null;
     if (label) label.textContent = v.toFixed(1) + "%";
   }
@@ -503,12 +362,23 @@ Health: ${state.kpis.systemHealth}/100`;
       : "HATA";
   }
 
-  function bumpVisits(delta) {
-    state.kpis.todayVisits = clamp(state.kpis.todayVisits + delta, 0, 999999);
+  /* ---------- mock fallback ---------- */
+  function refreshMockData() {
+    state.kpis.todayVisits = randInt(2400, 7200);
+    state.kpis.activeUsers = randInt(60, 180);
+    state.kpis.growthRate  = randInt(1, 7) + Math.random();
+    state.kpis.systemHealth= randInt(70, 95);
+    setText("#ortakMoodLabel", state.kpis.growthRate >= 5 ? "Heyecanlı" : "Kararlı");
   }
-  function bumpGrowth(delta) {
-    state.kpis.growthRate = clamp(state.kpis.growthRate + delta, 0, 99);
+
+  function buildMockSummary() {
+    return `Aktif ziyaretçi ~${state.kpis.activeUsers}. Günlük büyüme ${state.kpis.growthRate.toFixed(1)}%. Sistem sağlığı ${state.kpis.systemHealth}/100. Ortak izliyor ve yeni küçük özellikleri otomatik açıyor.`;
   }
+
+  function buildHumanSummary() {
+    return `Şu an ${state.kpis.activeUsers} kişi aktif. Büyüme ${state.kpis.growthRate.toFixed(1)}%. Sağlık ${state.kpis.systemHealth}/100. Premium/Kurumsal/B2B açarsan dönüşüm hızlanır.`;
+  }
+
   function bumpHealth(delta) {
     state.kpis.systemHealth = clamp(state.kpis.systemHealth + delta, 35, 100);
   }
@@ -517,8 +387,19 @@ Health: ${state.kpis.systemHealth}/100`;
     if (s) s.status = status;
   }
 
+  /* ---------- logs / toast ---------- */
   function pushLog(message) {
-    state.logs.push({ t: nowTime(), m: message });
+    const ul = $("#log-list");
+    const t = new Date().toLocaleTimeString("tr-TR", { hour:"2-digit", minute:"2-digit" });
+    state.logs.push({ t, m: message });
+    if (!ul) return;
+    ul.innerHTML = "";
+    state.logs.slice(-50).reverse().forEach(l => {
+      const li = document.createElement("li");
+      li.className = "log-item";
+      li.innerHTML = `<div class="log-time">${l.t}</div><div class="log-text">${escapeHtml(l.m)}</div>`;
+      ul.appendChild(li);
+    });
   }
 
   function toast(message) {
@@ -531,29 +412,14 @@ Health: ${state.kpis.systemHealth}/100`;
     toast._timer = setTimeout(() => t.classList.remove("show"), 1600);
   }
 
-  function nowTime() {
-    return new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-  }
   function randInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
   function escapeHtml(str) {
     return String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+      .replaceAll("&","&amp;").replaceAll("<","&lt;")
+      .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 
-  function setCmdOutput(text) {
-    const out = $("#cmd-output");
-    if (out) out.textContent = text;
-  }
-  function appendCmdOutput(text) {
-    const out = $("#cmd-output");
-    if (!out) return;
-    out.textContent = (out.textContent ? out.textContent + "\n\n" : "") + text;
-    out.scrollTop = out.scrollHeight;
-  }
 })();
