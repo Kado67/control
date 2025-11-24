@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>InflowAI | Kontrol Merkezi</title>
+  <title>InflowAI Kontrol Merkezi</title>
   <link rel="stylesheet" href="./styles.css" />
-  <meta name="theme-color" content="#06080f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2300d4ff'/%3E%3Ccircle cx='62' cy='38' r='18' fill='%23ffffff' fill-opacity='.9'/%3E%3Ccircle cx='34' cy='62' r='12' fill='%23ffffff' fill-opacity='.8'/%3E%3C/svg%3E">
 </head>
 <body>
   <div class="app">
@@ -19,181 +19,217 @@
         </div>
       </div>
 
-      <div class="api-pill" id="apiPill">
+      <div class="api-status" id="apiPill">
         <span class="dot" id="apiDot"></span>
         <span id="apiText">API kontrol ediliyor...</span>
-        <button class="mini-btn" id="btnRetry">Yenile</button>
+        <button class="tiny" id="btnRetry" title="Tekrar dene">Yenile</button>
       </div>
 
       <nav class="nav">
         <button class="nav-item active" data-page="overview">
-          <span class="ico">⌘</span><span>Genel Bakış</span>
+          <span class="ni">⌘</span><span>Genel Bakış</span>
         </button>
         <button class="nav-item" data-page="core">
-          <span class="ico">◉</span><span>Core (Beyin)</span>
+          <span class="ni">🧠</span><span>Core (Beyin)</span>
         </button>
         <button class="nav-item" data-page="growth">
-          <span class="ico">↗</span><span>Growth</span>
+          <span class="ni">📈</span><span>Growth</span>
         </button>
         <button class="nav-item" data-page="services">
-          <span class="ico">⚙</span><span>Services</span>
+          <span class="ni">⚙️</span><span>Services</span>
         </button>
         <button class="nav-item" data-page="sharing">
-          <span class="ico">⇄</span><span>Sharing</span>
+          <span class="ni">🔁</span><span>Sharing</span>
         </button>
         <button class="nav-item" data-page="security">
-          <span class="ico">🛡</span><span>Security</span>
+          <span class="ni">🛡️</span><span>Security</span>
         </button>
         <button class="nav-item" data-page="updating">
-          <span class="ico">⟳</span><span>Updating</span>
+          <span class="ni">♻️</span><span>Updating</span>
         </button>
         <button class="nav-item" data-page="commands">
-          <span class="ico">✦</span><span>Komutlar</span>
+          <span class="ni">✨</span><span>Komutlar</span>
         </button>
         <button class="nav-item" data-page="monetization">
-          <span class="ico">₺</span><span>Monetization</span>
+          <span class="ni">₺</span><span>Monetization</span>
         </button>
-        <button class="nav-item" data-page="infinity">
-          <span class="ico">∞</span><span>Sonsuzluk Merkezi</span>
+        <button class="nav-item" data-page="infinite">
+          <span class="ni">∞</span><span>Sonsuzluk Merkezi</span>
         </button>
       </nav>
 
-      <div class="sidebar-footer">
-        <div class="chip">UI v2.0</div>
-        <div class="chip" id="chipMode">API: kontrol...</div>
-        <div class="footer-actions">
-          <button class="ghost" id="btnLock">Paneli Kilitle</button>
-          <button class="ghost danger" id="btnEmergency">Acil Mod</button>
+      <div class="side-footer">
+        <div class="chips">
+          <span class="chip" id="chipUi">UI v1.0</span>
+          <span class="chip ghost" id="chipMode">API mock</span>
         </div>
+        <div class="hint">InflowAI • canlı kontrol paneli</div>
       </div>
     </aside>
 
     <!-- MAIN -->
     <main class="main">
-      <!-- TOPBAR -->
       <header class="topbar">
-        <button class="hamburger" id="btnHamburger">☰</button>
-        <div class="topbar-title" id="pageTitle">Genel Bakış</div>
-
-        <div class="topbar-actions">
-          <button class="pill" id="btnLive">
-            <span class="pulse"></span> Live
-          </button>
-          <button class="pill" id="btnRefresh">Yenile</button>
+        <button class="burger" id="btnHamburger" title="Menü">☰</button>
+        <div class="page-title">
+          <h1 id="pageTitle">Genel Bakış</h1>
+          <p id="pageSubtitle">Tüm katmanları buradan izleyip yönetebilirsin.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnRefresh">Yenile</button>
+          <button class="btn primary" id="btnLive">Live</button>
         </div>
       </header>
 
-      <!-- CONTENT -->
-      <section class="content">
-        <!-- OVERVIEW PAGE -->
-        <div class="page active" id="page-overview">
-          <div class="grid grid-3">
-            <div class="card metric">
-              <div class="metric-title">Bugünkü Ziyaret</div>
-              <div class="metric-value" id="mVisits">—</div>
-              <div class="metric-sub" id="mVisitsSub">son 24 saat</div>
-            </div>
-            <div class="card metric">
-              <div class="metric-title">Aktif Kullanıcı</div>
-              <div class="metric-value" id="mUsers">—</div>
-              <div class="metric-sub">anlık</div>
-            </div>
-            <div class="card metric">
-              <div class="metric-title">Büyüme Oranı</div>
-              <div class="metric-value" id="mGrowth">—</div>
-              <div class="metric-sub">günlük trend</div>
-            </div>
+      <!-- OVERVIEW PAGE -->
+      <section class="page show" id="page-overview">
+        <div class="grid">
+          <div class="card kpi">
+            <div class="kpi-title">Bugünkü Ziyaret</div>
+            <div class="kpi-value" id="mVisits">—</div>
+            <div class="kpi-sub">son 24 saat</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-title">Aktif Kullanıcı</div>
+            <div class="kpi-value" id="mUsers">—</div>
+            <div class="kpi-sub">şu an</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-title">Büyüme Oranı</div>
+            <div class="kpi-value" id="mGrowth">—</div>
+            <div class="kpi-sub">günlük trend</div>
           </div>
 
-          <div class="grid grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <div class="card-title">Sistem Sağlığı Detay</div>
-                  <div class="card-sub">Ortak motor + katmanlar</div>
-                </div>
-                <div class="status-badge" id="healthBadge">Kontrol...</div>
-              </div>
-
-              <div class="bars">
-                <div class="bar">
-                  <div class="bar-label">API Gecikme</div>
-                  <div class="bar-track"><div class="bar-fill" id="bLatency"></div></div>
-                  <div class="bar-value" id="bLatencyVal">—</div>
-                </div>
-                <div class="bar">
-                  <div class="bar-label">Ortalama Çökme</div>
-                  <div class="bar-track"><div class="bar-fill" id="bCrash"></div></div>
-                  <div class="bar-value" id="bCrashVal">—</div>
-                </div>
-                <div class="bar">
-                  <div class="bar-label">Hata Oranı</div>
-                  <div class="bar-track"><div class="bar-fill" id="bError"></div></div>
-                  <div class="bar-value" id="bErrorVal">—</div>
-                </div>
-                <div class="bar">
-                  <div class="bar-label">Uptime</div>
-                  <div class="bar-track"><div class="bar-fill" id="bUptime"></div></div>
-                  <div class="bar-value" id="bUptimeVal">—</div>
-                </div>
-              </div>
+          <div class="card wide">
+            <div class="card-head">
+              <h3>Sistem Sağlığı Detayı</h3>
+              <span class="badge" id="healthBadge">—</span>
             </div>
 
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <div class="card-title">Ortak Konuşuyor</div>
-                  <div class="card-sub">API özet + görevler</div>
-                </div>
-                <button class="mini-btn" id="btnAskOrtak">Analiz Al</button>
+            <div class="health">
+              <div class="h-row">
+                <div class="h-label">API Çalışma</div>
+                <div class="bar"><div class="fill" id="bUptime"></div></div>
+                <div class="h-val" id="bUptimeVal">—</div>
               </div>
-
-              <div class="ortak-box" id="ortakBox">
-                <div class="skeleton"></div>
-                <div class="skeleton"></div>
-                <div class="skeleton short"></div>
+              <div class="h-row">
+                <div class="h-label">Ortalama Gecikme</div>
+                <div class="bar"><div class="fill" id="bLatency"></div></div>
+                <div class="h-val" id="bLatencyVal">—</div>
               </div>
-
-              <div class="logs">
-                <div class="logs-head">
-                  <div class="card-title">Son Olaylar (Log)</div>
-                  <button class="mini-btn ghost" id="btnClearLogs">Temizle</button>
-                </div>
-                <ul class="log-list" id="logList"></ul>
+              <div class="h-row">
+                <div class="h-label">Hata Oranı</div>
+                <div class="bar"><div class="fill" id="bError"></div></div>
+                <div class="h-val" id="bErrorVal">—</div>
+              </div>
+              <div class="h-row">
+                <div class="h-label">Çökme Riski</div>
+                <div class="bar"><div class="fill" id="bCrash"></div></div>
+                <div class="h-val" id="bCrashVal">—</div>
               </div>
             </div>
           </div>
 
           <div class="card">
             <div class="card-head">
-              <div>
-                <div class="card-title">Katmanlar Durumu</div>
-                <div class="card-sub">7 katman + sonsuzluk merkezi</div>
-              </div>
+              <h3>Ortak Konuşuyor</h3>
+              <span class="muted" id="ortakPing">—</span>
             </div>
-            <div class="layers" id="layers"></div>
+            <div class="ortak-box" id="ortakBox">
+              Ortak motorundan veri bekleniyor…
+            </div>
+            <div class="card-actions">
+              <button class="btn small" id="btnAnalyze">Analiz Et</button>
+              <button class="btn small ghost" id="btnFeatures">Komutlara Git</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Son Olaylar (Log)</h3>
+              <button class="tiny ghost" id="btnClearLog">Temizle</button>
+            </div>
+            <ul class="log" id="logList"></ul>
           </div>
         </div>
-
-        <!-- OTHER PAGES (PLACEHOLDERS, DOLU GELİYOR) -->
-        <div class="page" id="page-core"></div>
-        <div class="page" id="page-growth"></div>
-        <div class="page" id="page-services"></div>
-        <div class="page" id="page-sharing"></div>
-        <div class="page" id="page-security"></div>
-        <div class="page" id="page-updating"></div>
-        <div class="page" id="page-commands"></div>
-        <div class="page" id="page-monetization"></div>
-        <div class="page" id="page-infinity"></div>
       </section>
+
+      <!-- OTHER PAGES -->
+      <section class="page" id="page-core">
+        <div class="empty">
+          <h2>Core (Beyin)</h2>
+          <p>Bu katman canlı API üzerinden beslenecek. Hazır olduğunda otomatik dolacak.</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-growth">
+        <div class="empty">
+          <h2>Growth</h2>
+          <p>Vercel Analytics + Ortak motor sentezinden beslenecek büyüme ekranı.</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-services">
+        <div class="empty">
+          <h2>Services</h2>
+          <p>Servislerin durumu, latency, bağımlılıklar ve otomatik aksiyonlar.</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-sharing">
+        <div class="empty">
+          <h2>Sharing</h2>
+          <p>Paylaşım/dağıtım katmanı; içerik akışı, sosyal dağıtım, embed & API.</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-security">
+        <div class="empty">
+          <h2>Security</h2>
+          <p>Güvenlik ve koruma katmanı. (rate-limit, firewall, izinler, kayıtlar)</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-updating">
+        <div class="empty">
+          <h2>Updating</h2>
+          <p>Kendi kendini güncelleyen modüller ve versiyon yönetimi.</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-commands">
+        <div class="grid">
+          <div class="card wide">
+            <div class="card-head">
+              <h3>Komutlar & Özellikler</h3>
+              <span class="muted">Ortak engine listesi</span>
+            </div>
+            <div class="features" id="featuresList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-monetization">
+        <div class="empty">
+          <h2>Monetization</h2>
+          <p>Premium, Kurumsal, B2B ve AdSense raporlama kapısı.</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-infinite">
+        <div class="empty">
+          <h2>Sonsuzluk Merkezi</h2>
+          <p>Evren dışı arşiv, zeka kasası, kriz modülü. Tüm veri burada toplanacak.</p>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div>InflowAI Control Center • v1.0</div>
+        <div class="muted" id="footApi">API: —</div>
+      </footer>
     </main>
   </div>
 
-  <!-- API BASE (istersen burada değiştirirsin) -->
-  <script>
-    // UI statik olduğu için env yok, bu yüzden buraya yazıyoruz:
-    window.__API_BASE__ = "https://inflowai-api.onrender.com";
-  </script>
   <script src="./scripts.js"></script>
 </body>
 </html>
