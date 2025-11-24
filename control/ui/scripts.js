@@ -1,289 +1,260 @@
-/* =========================
-   InflowAI Kontrol Merkezi — ORTAK
-   scripts.js
-   ========================= */
-(() => {
-  "use strict";
+// ================================
+// InflowAI Kontrol Merkezi — ORTAK UI
+// Vanilla JS, build yok, direkt çalışır.
+// ================================
 
-  const API_BASE = "https://inflowai-api.onrender.com";
+// === AYAR ===
+const API_BASE = "https://inflowai-api.onrender.com"; // GEREKİRSE burayı değiştir
+const STATUS_URL = `${API_BASE}/api/status`;
+const SUMMARY_URL = `${API_BASE}/api/ortak/summary`;
+const FEATURES_URL = `${API_BASE}/api/ortak/features`;
 
-  const $ = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-  const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+// UI refs
+const apiDot = document.getElementById("apiDot");
+const apiText = document.getElementById("apiText");
+const apiModePill = document.getElementById("apiModePill");
+const refreshBtn = document.getElementById("refreshBtn");
 
-  const ui = {
-    apiDot: $("#api-dot"),
-    apiText: $("#api-text"),
-    btnRefresh: $("#btn-refresh"),
+const ortakToggle = document.getElementById("ortakToggle");
+const ortakStatePill = document.getElementById("ortakStatePill");
+const ortakSummaryText = document.getElementById("ortakSummaryText");
+const ruhHali = document.getElementById("ruhHali");
+const saglikSkoru = document.getElementById("saglikSkoru");
+const sonGuncelleme = document.getElementById("sonGuncelleme");
+const ortakOneriList = document.getElementById("ortakOneriList");
+const ortakFoundList = document.getElementById("ortakFoundList");
+const ortakCount = document.getElementById("ortakCount");
 
-    ortakMode: $("#ortak-mode"),
-    ortakSummary: $("#ortak-summary"),
-    ortakMood: $("#ortak-mood"),
-    ortakHealth: $("#ortak-health"),
-    ortakUpdated: $("#ortak-updated"),
-    ortakActions: $("#ortak-actions"),
-    ortakHint: $("#ortak-hint"),
+const platformFeaturesBox = document.getElementById("platformFeatures");
+const platformCount = document.getElementById("platformCount");
 
-    embeddedList: $("#embedded-list"),
-    suggestedList: $("#suggested-list"),
-    embeddedCount: $("#embedded-count"),
-    suggestedCount: $("#suggested-count"),
+const logBox = document.getElementById("logBox");
+const logCount = document.getElementById("logCount");
 
-    logList: $("#log-list"),
-    logCount: $("#log-count"),
+// state
+let apiOnline = false;
+let ortakEnabled = JSON.parse(localStorage.getItem("ortakEnabled") || "true");
+let pollTimer = null;
 
-    toast: $("#toast"),
-    toastInner: $("#toast-inner")
-  };
+// helpers
+const sleep = (ms)=> new Promise(r=>setTimeout(r, ms));
+function log(msg){
+  const t = new Date().toLocaleTimeString();
+  logBox.textContent = `[${t}] ${msg}\n` + logBox.textContent;
+  const lines = logBox.textContent.trim().split("\n").filter(Boolean);
+  logCount.textContent = `${lines.length} kayıt`;
+}
 
-  const state = {
-    embeddedFeatures: [
-      { id:"free_pack", title:"Ücretsiz Paket", desc:"Şu an yayında olan paket.", locked:true },
-      { id:"premium_pack", title:"Premium Paket", desc:"Kontrol merkezinden aç/kapat.", locked:false },
-      { id:"b2b_pack", title:"B2B Paket", desc:"Kurumsal iş ortaklığı paketi.", locked:false },
-      { id:"corporate_pack", title:"Kurumsal Paket", desc:"Büyük şirketler için.", locked:false },
+function setApiStatus(online, mode="live"){
+  apiOnline = online;
+  apiDot.style.background = online ? "var(--good)" : "var(--bad)";
+  apiDot.style.boxShadow = online ? "0 0 10px var(--good)" : "0 0 10px var(--bad)";
+  apiText.textContent = online ? "API bağlantısı aktif" : "API bağlantısı yok";
+  apiModePill.textContent = online ? "API live" : "API mock";
+}
 
-      { id:"adsense_slot_1", title:"AdSense Reklam Alanı #1", desc:"Reklam yerleşimi aç/kapat." },
-      { id:"adsense_slot_2", title:"AdSense Reklam Alanı #2", desc:"Ek reklam alanı." },
-
-      { id:"smart_search", title:"Akıllı Arama", desc:"İçeriklerde hızlı arama." },
-      { id:"auto_tags", title:"Oto Etiketleme", desc:"İçeriklere otomatik etiket." },
-      { id:"live_feed", title:"Canlı Akış", desc:"Ziyaretçi ile etkileşim akışı." },
-    ],
-    suggestedFeatures: [],
-    toggles: loadToggles(),
-    logs: []
-  };
-
-  document.addEventListener("DOMContentLoaded", init);
-
-  function init(){
-    on(ui.btnRefresh, "click", () => {
-      pullAll(true);
-    });
-
-    pullAll(true);
-    setInterval(() => pullAll(false), 8000);
-  }
-
-  /* ---------- API PULL ---------- */
-  async function pullAll(forceLog){
-    const apiOk = await pingApi();
-    if(!apiOk){
-      renderApi(false);
-      if(forceLog) addLog("API’ye ulaşılamadı. Render/Network kontrol et.");
-      return;
-    }
-
-    renderApi(true);
-
-    await Promise.all([
-      pullSummary(),
-      pullFeatures()
-    ]);
-
-    renderAll();
-    if(forceLog) toast("Veriler güncellendi.");
-  }
-
-  async function pingApi(){
+// robust fetch with retry (Render sleep için)
+async function fetchJSON(url, opts={}, retry=3){
+  let lastErr;
+  for(let i=0;i<retry;i++){
     try{
-      const r = await fetch(`${API_BASE}/api/status`, { cache:"no-store" });
-      return r.ok;
+      const res = await fetch(url, { ...opts, cache:"no-store" });
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
     }catch(e){
-      return false;
+      lastErr = e;
+      await sleep(800 + i*700);
     }
   }
+  throw lastErr;
+}
 
-  async function pullSummary(){
-    try{
-      const r = await fetch(`${API_BASE}/api/ortak/summary`, { cache:"no-store" });
-      const j = await r.json();
-      const data = j.data || {};
-
-      ui.ortakSummary.textContent = data.summary || "Ortak özet üretiyor...";
-      ui.ortakMood.textContent = data.mood || "—";
-      ui.ortakHealth.textContent = data.healthScore ?? "—";
-      ui.ortakHint.textContent = data.mainActionHint || "";
-      ui.ortakUpdated.textContent = new Date().toLocaleTimeString("tr-TR");
-      ui.ortakMode.textContent = "AKTİF";
-
-      // öneriler listesi
-      const actions = Array.isArray(data.allActions) ? data.allActions : [];
-      ui.ortakActions.innerHTML = actions.map(a => `<li>${escapeHtml(a)}</li>`).join("") || `<li>Ortak öneri hazırlıyor...</li>`;
-
-      // suggestedFeatures için ham önerileri kullan
-      state.suggestedFeatures = actions.map((a, i) => ({
-        id: `ortak_${i}_${hash(a)}`,
-        title: a,
-        desc: "Ortak tarafından önerildi."
-      }));
-    }catch(e){
-      addLog("Ortak özeti çekilemedi.");
-    }
+// API status ping
+async function checkApi(){
+  try{
+    const data = await fetchJSON(STATUS_URL, {}, 4);
+    setApiStatus(true);
+    log(`API OK: ${data.message}`);
+    return true;
+  }catch(e){
+    setApiStatus(false);
+    log(`API kapalı/uyuyor: ${e.message}`);
+    return false;
   }
+}
 
-  async function pullFeatures(){
-    // API'de featureConfig var ama UI’da sadece Ortak önerileri + gömülü listeyi kullanıyoruz.
-    try{
-      await fetch(`${API_BASE}/api/ortak/features`, { cache:"no-store" });
-    }catch(e){
-      /* önemli değil */
-    }
-  }
+// render platform features
+function renderPlatformFeatures(list){
+  platformFeaturesBox.innerHTML = "";
+  platformCount.textContent = `${list.length} özellik`;
 
-  /* ---------- RENDER ---------- */
-  function renderAll(){
-    renderEmbedded();
-    renderSuggested();
-    renderLogs();
-  }
+  list.forEach(f=>{
+    const id = f.id || f.key || f.name;
+    const enabled = JSON.parse(localStorage.getItem(`feat:${id}`) || "false");
 
-  function renderApi(ok){
-    if(!ui.apiDot || !ui.apiText) return;
-    if(ok){
-      ui.apiDot.style.background = "#22c55e";
-      ui.apiDot.style.boxShadow = "0 0 10px rgba(34,197,94,.9)";
-      ui.apiText.textContent = "API bağlantısı aktif";
-      ui.apiText.parentElement.style.background = "rgba(34,197,94,.10)";
-      ui.apiText.parentElement.style.borderColor = "rgba(34,197,94,.38)";
-      ui.apiText.parentElement.style.color = "#c9f7db";
-    }else{
-      ui.apiDot.style.background = "#ef4444";
-      ui.apiDot.style.boxShadow = "0 0 10px rgba(239,68,68,.9)";
-      ui.apiText.textContent = "API bağlantısı yok";
-      ui.apiText.parentElement.style.background = "rgba(239,68,68,.08)";
-      ui.apiText.parentElement.style.borderColor = "rgba(239,68,68,.25)";
-      ui.apiText.parentElement.style.color = "#ffd8d8";
-      ui.ortakMode.textContent = "BAĞLANTI YOK";
-    }
-  }
-
-  function renderEmbedded(){
-    const list = ui.embeddedList;
-    if(!list) return;
-
-    list.innerHTML = "";
-    state.embeddedFeatures.forEach(f => {
-      const enabled = !!state.toggles[f.id];
-      list.appendChild(makeToggleRow(f, enabled, (val) => {
-        if(f.locked) return; // ücretsiz paket kilit
-        setToggle(f.id, val);
-        addLog(`${f.title} ${val ? "AÇILDI" : "KAPANDI"}.`);
-        toast(`${f.title} ${val ? "açıldı" : "kapandı"}`);
-      }, f.locked));
-    });
-
-    ui.embeddedCount.textContent = `${state.embeddedFeatures.length} özellik`;
-  }
-
-  function renderSuggested(){
-    const list = ui.suggestedList;
-    if(!list) return;
-
-    list.innerHTML = "";
-    const unique = dedupeById(state.suggestedFeatures);
-
-    unique.forEach(f => {
-      const enabled = !!state.toggles[f.id];
-      list.appendChild(makeToggleRow(f, enabled, (val) => {
-        setToggle(f.id, val);
-        addLog(`Ortak özelliği: "${f.title}" ${val ? "AÇILDI" : "KAPANDI"}.`);
-        toast(`Ortak özelliği ${val ? "açıldı" : "kapandı"}`);
-      }));
-    });
-
-    ui.suggestedCount.textContent = `${unique.length} özellik`;
-  }
-
-  function makeToggleRow(feature, enabled, onChange, locked=false){
     const row = document.createElement("div");
-    row.className = "toggle-item";
-
+    row.className = "feature-row";
     row.innerHTML = `
-      <div class="toggle-info">
-        <div class="toggle-title">${escapeHtml(feature.title)}</div>
-        <div class="toggle-desc">${escapeHtml(feature.desc || "")}</div>
+      <div class="feature-meta">
+        <div class="feature-title">${f.name}</div>
+        <div class="feature-desc">${f.desc || f.description || ""}</div>
       </div>
       <label class="switch">
-        <input type="checkbox" ${enabled ? "checked":""} ${locked ? "disabled":""}>
+        <input type="checkbox" ${enabled ? "checked":""} data-feat="${id}">
         <span class="slider"></span>
       </label>
     `;
+    platformFeaturesBox.appendChild(row);
+  });
 
-    const input = $("input", row);
-    on(input, "change", () => onChange(!!input.checked));
-    return row;
-  }
-
-  /* ---------- TOGGLES PERSIST ---------- */
-  function loadToggles(){
-    try{
-      return JSON.parse(localStorage.getItem("inflow_toggles") || "{}");
-    }catch(e){
-      return {};
-    }
-  }
-  function saveToggles(){
-    localStorage.setItem("inflow_toggles", JSON.stringify(state.toggles));
-  }
-  function setToggle(id, val){
-    state.toggles[id] = !!val;
-    saveToggles();
-  }
-
-  /* ---------- LOGS ---------- */
-  function addLog(msg){
-    state.logs.unshift({
-      t: new Date().toLocaleTimeString("tr-TR", {hour:"2-digit", minute:"2-digit", second:"2-digit"}),
-      m: msg
+  // toggle handlers
+  platformFeaturesBox.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+    cb.addEventListener("change", (e)=>{
+      const key = e.target.dataset.feat;
+      localStorage.setItem(`feat:${key}`, JSON.stringify(e.target.checked));
+      log(`Özellik ${key}: ${e.target.checked ? "AÇIK":"KAPALI"}`);
+      // İstersen burada API'ye de post atarız (ileride)
     });
-    if(state.logs.length > 60) state.logs.pop();
-    renderLogs();
-  }
+  });
+}
 
-  function renderLogs(){
-    const ul = ui.logList;
-    if(!ul) return;
-    ul.innerHTML = state.logs.map(l => `
-      <li class="log-item">
-        <div class="log-time">${l.t}</div>
-        <div class="log-text">${escapeHtml(l.m)}</div>
-      </li>
-    `).join("");
-    ui.logCount.textContent = `${state.logs.length} kayıt`;
-  }
+// load features from API
+async function loadFeatures(){
+  if(!apiOnline) return;
+  try{
+    const res = await fetchJSON(FEATURES_URL, {}, 4);
+    const features = res?.data || [];
 
-  /* ---------- TOAST ---------- */
-  function toast(msg){
-    if(!ui.toast || !ui.toastInner) return;
-    ui.toastInner.textContent = msg;
-    ui.toast.classList.add("show");
-    clearTimeout(toast._t);
-    toast._t = setTimeout(()=>ui.toast.classList.remove("show"), 1500);
-  }
+    // API "featureConfig" array döndürmüyorsa fallback
+    const normalized = features.map(x=>({
+      id: x.id || x.key || x.name,
+      name: x.name || x.title || "Özellik",
+      desc: x.desc || x.description || ""
+    }));
 
-  /* ---------- helpers ---------- */
-  function on(el, ev, fn){ el && el.addEventListener(ev, fn); }
-  function escapeHtml(s){
-    return String(s)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-  function dedupeById(arr){
-    const seen = new Set(); const out=[];
-    for(const a of arr){
-      if(seen.has(a.id)) continue;
-      seen.add(a.id); out.push(a);
+    renderPlatformFeatures(normalized);
+
+    // Ortak'ın bulduğu alanı ilk etapta boş bırakma
+    if(normalized.length === 0){
+      platformFeaturesBox.innerHTML = `<div class="muted">API features listesi boş döndü. Engine içi doldurulunca burada çıkacak.</div>`;
+      platformCount.textContent = `0 özellik`;
     }
-    return out;
+  }catch(e){
+    log(`Features çekilemedi: ${e.message}`);
   }
-  function hash(str){
-    let h=0; for(let i=0;i<str.length;i++) h=(h<<5)-h+str.charCodeAt(i)|0;
-    return Math.abs(h);
+}
+
+// render ortak summary/analysis
+function renderSummary(summary){
+  const mood = summary.ruhHali || summary.mood || "Kararlı";
+  const health = summary.saglikSkoru || summary.healthScore || 81;
+  const recs = summary.oneriler || summary.recommendations || [];
+
+  ruhHali.textContent = mood;
+  saglikSkoru.textContent = health;
+  sonGuncelleme.textContent = new Date().toLocaleTimeString();
+
+  // öneriler
+  ortakOneriList.innerHTML = "";
+  if(recs.length === 0){
+    ortakOneriList.innerHTML = `<li class="muted">Ortak henüz öneri üretmedi.</li>`;
+  }else{
+    recs.forEach(r=>{
+      const li = document.createElement("li");
+      li.textContent = r;
+      ortakOneriList.appendChild(li);
+    });
   }
 
+  // Ortak found/features
+  const found = summary.ortakBuldu || summary.foundFeatures || [];
+  ortakFoundList.innerHTML = "";
+  if(found.length === 0){
+    ortakFoundList.innerHTML = `<li class="muted">Ortak aktif ama yeni bir özellik önermedi.</li>`;
+  }else{
+    found.forEach(f=>{
+      const li = document.createElement("li");
+      li.textContent = f.name ? `${f.name} — ${f.desc||""}` : String(f);
+      ortakFoundList.appendChild(li);
+    });
+  }
+  ortakCount.textContent = `${found.length} özellik`;
+
+  ortakSummaryText.textContent = "Ortak özet üretiyor...";
+}
+
+// load ortak summary
+async function loadSummary(){
+  if(!apiOnline || !ortakEnabled) return;
+  try{
+    const res = await fetchJSON(SUMMARY_URL, {}, 4);
+    renderSummary(res?.data || {});
+    log(`Ortak summary güncellendi.`);
+  }catch(e){
+    log(`Ortak summary hatası: ${e.message}`);
+  }
+}
+
+// ortak enable/disable
+function setOrtakEnabled(v){
+  ortakEnabled = v;
+  localStorage.setItem("ortakEnabled", JSON.stringify(v));
+  ortakToggle.checked = v;
+  ortakStatePill.textContent = v ? "AKTİF" : "PASİF";
+  ortakStatePill.style.opacity = v ? "1" : ".6";
+  log(`Ortak ${v ? "AKTİF" : "PASİF"} edildi.`);
+
+  if(v){
+    loadSummary();
+    startPolling();
+  }else{
+    stopPolling();
+  }
+}
+
+function startPolling(){
+  stopPolling();
+  pollTimer = setInterval(loadSummary, 15000);
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+}
+
+// nav tabs (şimdilik sadece highlight)
+document.querySelectorAll(".nav-item").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    log(`Sekme: ${btn.textContent.trim()}`);
+  });
+});
+
+refreshBtn.addEventListener("click", async ()=>{
+  await checkApi();
+  await loadFeatures();
+  await loadSummary();
+});
+
+// init
+(async function init(){
+  ortakToggle.checked = ortakEnabled;
+  setOrtakEnabled(ortakEnabled);
+
+  await checkApi();
+  if(apiOnline){
+    await loadFeatures();
+    await loadSummary();
+    startPolling();
+  }else{
+    // API uyanınca otomatik toparlasın
+    const wakeTry = setInterval(async ()=>{
+      const ok = await checkApi();
+      if(ok){
+        clearInterval(wakeTry);
+        await loadFeatures();
+        await loadSummary();
+        startPolling();
+      }
+    }, 6000);
+  }
 })();
