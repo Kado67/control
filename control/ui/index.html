@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr" class="theme-dark">
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <title>InflowAI Kontrol Merkezi</title>
@@ -7,279 +7,131 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app">
+  <div class="app-shell">
     <!-- SOL MENÜ -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo"></div>
+        <div class="brand-icon">IA</div>
         <div class="brand-text">
-          <div class="brand-title">InflowAI</div>
-          <div class="brand-sub">Kontrol Merkezi &amp; Ortak</div>
+          <h1>InflowAI</h1>
+          <p>Kontrol Merkezi</p>
         </div>
       </div>
 
-      <!-- API DURUMU -->
-      <div id="api-pill" class="api-pill">
-        <div id="apiLamp" class="dot"></div>
-        <span id="apiStatusText" class="api-text">
-          API bağlantısı yok (mock mod)
-        </span>
-        <button id="btnTestApi" class="mini-btn">Test</button>
+      <div class="api-status-box">
+        <span class="api-status-dot" id="api-status-dot"></span>
+        <div class="api-status-text">
+          <div id="api-status-label">API durumu kontrol ediliyor…</div>
+          <small id="api-status-sub">Canlı bağlantı testi</small>
+        </div>
       </div>
 
-      <!-- NAV (SADECE SAYFAYA KAYDIRIR) -->
-      <nav class="nav">
-        <button class="nav-item active" data-target="#section-overview">
-          <div class="nav-ico">◎</div>
-          <div>Genel Bakış</div>
-        </button>
-        <button class="nav-item" data-target="#section-ortak">
-          <div class="nav-ico">🤖</div>
-          <div>Ortak</div>
-        </button>
-        <button class="nav-item" data-target="#section-commands">
-          <div class="nav-ico">⌨️</div>
-          <div>Komut Konsolu</div>
-        </button>
-        <button class="nav-item" data-target="#section-logs">
-          <div class="nav-ico">📜</div>
-          <div>Loglar</div>
-        </button>
-        <button class="nav-item" data-target="#section-infinity">
-          <div class="nav-ico">∞</div>
-          <div>Sonsuzluk Merkezi</div>
-        </button>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="overview">Genel Bakış</button>
+        <button class="nav-item" data-section="core">Core (Beyin)</button>
+        <button class="nav-item" data-section="growth">Growth</button>
+        <button class="nav-item" data-section="services">Services</button>
+        <button class="nav-item" data-section="sharing">Sharing</button>
+        <button class="nav-item" data-section="security">Security</button>
+        <button class="nav-item" data-section="updating">Updating</button>
+        <button class="nav-item" data-section="commands">Komutlar</button>
+        <button class="nav-item" data-section="monetization">Monetization</button>
+        <button class="nav-item" data-section="infinity">Sonsuzluk Merkezi</button>
       </nav>
 
-      <!-- SÜRÜM & HIZLI İŞLEMLER -->
       <div class="sidebar-footer">
-        <div class="version">
-          <div class="version-title">InflowAI Kontrol Merkezi</div>
-          <div class="version-badges">
-            <span class="badge">Ortak v1</span>
-            <span class="badge ghost">API bağlı</span>
-          </div>
+        <div class="tag-row">
+          <span class="tag">UI v1.0</span>
+          <span class="tag tag-outline" id="api-mode-tag">API: Live</span>
         </div>
-
-        <div class="quick-actions">
-          <button id="btnRefreshAll" class="ghost-btn">
-            Verileri yenile
-          </button>
-          <button id="btnMockToggle" class="ghost-btn">
-            Mock / Live
-          </button>
-        </div>
+        <small class="hint">Bu panelden sadece platformu yönetiyorsun, 
+          ziyaretçi görmüyor.</small>
       </div>
     </aside>
 
-    <!-- ANA İÇERİK -->
+    <!-- SAĞ ANA ALAN -->
     <main class="main">
-      <!-- ÜST BAR -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <h1>Kontrol Merkezi</h1>
-          <p>
-            InflowAI platformu, Ortak motoru ve Sonsuzluk Merkezi'nin canlı
-            durumu.
+      <!-- Üst bar -->
+      <header class="top-bar">
+        <div>
+          <h2 id="section-title">Genel Bakış</h2>
+          <p id="section-subtitle">
+            Tüm katmanların nabzını buradan takip edebilirsin.
           </p>
         </div>
-        <div class="topbar-right">
-          <div class="user-chip">
-            <div class="user-dot"></div>
-            <div>
-              <div class="user-name">Kadir</div>
-              <div class="user-role">Süper Admin</div>
-            </div>
+
+        <div class="top-actions">
+          <div class="pill">
+            <span id="last-check-label">Son kontrol: bekleniyor…</span>
           </div>
         </div>
       </header>
 
-      <!-- İÇERİK -->
-      <div class="content">
-
-        <!-- GENEL BAKIŞ -->
-        <section id="section-overview" class="section">
-          <div class="grid kpi-grid">
-            <div class="card kpi">
-              <div class="kpi-label">Bugünkü Ziyaret</div>
-              <div id="metricTodayVisits" class="kpi-value">0</div>
-              <div class="kpi-sub">
-                Son güncelleme:
-                <span id="metricVisitsUpdated">-</span>
-              </div>
+      <!-- Kart alanı -->
+      <section class="cards" id="overview-section">
+        <article class="card card-large">
+          <h3>Platform Durumu</h3>
+          <p class="card-desc">
+            Rakamlara boğmadan sana büyük resmi gösteren özet.
+          </p>
+          <div class="status-grid">
+            <div class="status-item">
+              <span class="status-label">Genel Sağlık</span>
+              <span class="status-value" id="overview-health">—</span>
+              <span class="status-sub">Core + API + Güvenlik</span>
             </div>
-            <div class="card kpi">
-              <div class="kpi-label">Aktif Kullanıcı</div>
-              <div id="metricActiveNow" class="kpi-value">0</div>
-              <div class="kpi-sub">Canlı oturum tahmini</div>
+            <div class="status-item">
+              <span class="status-label">Mod</span>
+              <span class="status-value" id="overview-mode">Bekleniyor</span>
+              <span class="status-sub">Canlı / İzleme / Acil</span>
             </div>
-            <div class="card kpi">
-              <div class="kpi-label">Günlük Büyüme</div>
-              <div id="metricGrowthRate" class="kpi-value">0%</div>
-              <div class="kpi-sub">
-                Ortak yorumu:
-                <span id="growthHint">-</span>
-              </div>
-            </div>
-            <div class="card kpi">
-              <div class="kpi-label">Sistem Sağlığı</div>
-              <div id="metricHealthScore" class="kpi-value">0/100</div>
-              <div class="kpi-sub">
-                Uptime:
-                <span id="uptimeValue">-</span>
-              </div>
+            <div class="status-item">
+              <span class="status-label">Uptime (dk)</span>
+              <span class="status-value" id="overview-uptime">—</span>
+              <span class="status-sub">API çalışma süresi</span>
             </div>
           </div>
+        </article>
 
-          <div class="grid two-col">
-            <!-- Servis Durumu -->
-            <div class="card">
-              <div class="card-head">
-                <h2>Katman Durumu</h2>
-                <span class="pill ok">Core bağlı</span>
-              </div>
-              <div id="serviceList" class="status-list">
-                <!-- JS ile dolduruluyor -->
-              </div>
-            </div>
+        <article class="card">
+          <h3>Core (Beyin)</h3>
+          <p class="card-desc">
+            Asistan, üretim ve karar mekanizması burada birleşiyor.
+          </p>
+          <ul class="plain-list" id="core-summary-list">
+            <li>Durum: <strong>Hazır</strong> (temel API bağlantısı çalışıyor)</li>
+            <li>Sonraki adım: Katman bazlı detay API'leri ekleyeceğiz.</li>
+          </ul>
+        </article>
 
-            <!-- Mini istatistikler -->
-            <div class="card">
-              <div class="card-head">
-                <h2>Özet İstatistikler</h2>
-              </div>
-              <div class="mini-grid">
-                <div class="mini">
-                  <div class="mini-title">Genel Sağlık</div>
-                  <div id="mini-health" class="mini-val">0</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Durum</div>
-                  <div id="mini-state" class="mini-val">-</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Uptime</div>
-                  <div id="mini-uptime" class="mini-val">-</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Latency</div>
-                  <div id="mini-latency" class="mini-val">-</div>
-                </div>
-                <div class="mini">
-                  <div class="mini-title">Error</div>
-                  <div id="mini-error" class="mini-val">-</div>
-                </div>
-              </div>
-              <div class="divider"></div>
-              <div class="muted">
-                Son güncelleme:
-                <span id="last-updated">-</span>
-              </div>
-            </div>
+        <article class="card">
+          <h3>Güvenli Büyüme</h3>
+          <p class="card-desc">
+            Ziyaretçi ve içerik sayısını buradan değil, ana platformdan
+            takip edeceksin. Burada sadece “kontrol” var.
+          </p>
+          <ul class="plain-list">
+            <li>Reklam / ödeme entegrasyonu: Daha sonra açılacak.</li>
+            <li>Şu an odak: API bağlantısı, stabilite, katman mimarisi.</li>
+          </ul>
+        </article>
+      </section>
+
+      <!-- Diğer bölümler için tek bir dinamik alan -->
+      <section class="cards hidden" id="dynamic-section">
+        <article class="card card-large">
+          <h3 id="dynamic-title">Başlık</h3>
+          <p class="card-desc" id="dynamic-desc">
+            Açıklama.
+          </p>
+          <div class="dynamic-content" id="dynamic-content">
+            <!-- JS burayı dolduruyor -->
           </div>
-        </section>
-
-        <!-- ORTAK -->
-        <section id="section-ortak" class="section">
-          <div class="card assistant-box">
-            <div class="card-head">
-              <h2>Ortak — Akıllı Asistan</h2>
-              <span id="ortakMoodPill" class="pill ghost">
-                Mod: Bilinmiyor
-              </span>
-            </div>
-            <div class="assistant-msg">
-              <div class="assistant-avatar"></div>
-              <div id="assistant-bubble" class="assistant-bubble">
-                <div class="assistant-title">Ortak</div>
-                <p id="assistantText">
-                  Merhaba Kadir, InflowAI platformunu izliyorum. API bağlantısı
-                  kurulunca sana canlı özet ve aksiyon önerileri vereceğim.
-                </p>
-              </div>
-            </div>
-            <div class="assistant-actions">
-              <button id="btnAskSummary" class="btn primary">
-                Güncel Özeti Getir
-              </button>
-              <button id="btnAskGrowth" class="btn ghost">
-                Büyüme İçin Öneri
-              </button>
-              <button id="btnAskRisk" class="btn ghost">
-                Riskleri Analiz Et
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- KOMUT KONSOLU -->
-        <section id="section-commands" class="section">
-          <div class="card">
-            <div class="card-head">
-              <h2>Komut Konsolu</h2>
-              <span class="pill ghost">Kod Yazmadan Kontrol</span>
-            </div>
-            <div class="command-input">
-              <input
-                id="cmdInput"
-                type="text"
-                placeholder='Örn: status, restart core, scale auto...'
-              />
-              <button id="cmdRun" class="btn primary">Komutu Çalıştır</button>
-            </div>
-            <div class="command-tags">
-              <button class="tag" data-cmd="status">status</button>
-              <button class="tag" data-cmd="restart core">
-                restart core
-              </button>
-              <button class="tag" data-cmd="scale auto">scale auto</button>
-              <button class="tag" data-cmd="clear logs">clear logs</button>
-              <button class="tag" data-cmd="help">help</button>
-            </div>
-            <pre id="cmdOutput" class="cmd-output"></pre>
-          </div>
-        </section>
-
-        <!-- LOGLAR -->
-        <section id="section-logs" class="section">
-          <div class="card">
-            <div class="card-head">
-              <h2>Canlı Loglar</h2>
-              <button id="btnClearLogs" class="mini-btn">Temizle</button>
-            </div>
-            <ul id="logList" class="log-list"></ul>
-          </div>
-        </section>
-
-        <!-- SONSUZLUK MERKEZİ (NOTLAR) -->
-        <section id="section-infinity" class="section">
-          <div class="card">
-            <div class="card-head">
-              <h2>Sonsuzluk Merkezi Notları</h2>
-              <span class="pill ghost">Platformun Sır Odası</span>
-            </div>
-            <textarea
-              id="notesTextarea"
-              placeholder="Buraya uzun vadeli planlarını, kritik notlarını, acil durum senaryolarını yazabilirsin. Tarayıcıda saklanır, sadece sende kalır."
-            ></textarea>
-            <div class="note-actions">
-              <button id="notesSave" class="btn primary">Notu Kaydet</button>
-              <button id="notesClear" class="btn ghost">
-                Notları Temizle
-              </button>
-            </div>
-          </div>
-        </section>
-
-      </div>
-
-      <!-- TOAST -->
-      <div id="toast" class="toast">
-        <div id="toast-inner" class="toast-inner"></div>
-      </div>
+        </article>
+      </section>
     </main>
   </div>
 
-  <script src="scripts.js"></script>
+  <script src="scripts.js" defer></script>
 </body>
 </html>
