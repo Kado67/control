@@ -19,136 +19,127 @@
         </div>
 
         <div class="api-status-box">
-          <div id="api-status-indicator" class="dot dot-offline"></div>
-          <div class="api-status-text">
-            <span id="api-status-label">API bağlantısı yok (mock mod)</span>
-            <small id="api-status-detail">Henüz bağlantı denenmedi</small>
-          </div>
+          <span id="api-status-pill" class="status-pill status-disconnected"></span>
+          <span id="api-status-text">API bağlantısı yok (mock mod)</span>
         </div>
 
         <nav class="nav">
-          <button class="nav-item active" data-section="genel">
-            <span>Genel Bakış</span>
-          </button>
-          <button class="nav-item" data-section="core">
-            <span>Core (Beyin)</span>
-          </button>
-          <button class="nav-item" data-section="growth">
-            <span>Growth</span>
-          </button>
-          <button class="nav-item" data-section="services">
-            <span>Services</span>
-          </button>
-          <button class="nav-item" data-section="sharing">
-            <span>Sharing</span>
-          </button>
-          <button class="nav-item" data-section="security">
-            <span>Security</span>
-          </button>
-          <button class="nav-item" data-section="updating">
-            <span>Updating</span>
-          </button>
-          <button class="nav-item" data-section="commands">
-            <span>Komutlar</span>
-          </button>
-          <button class="nav-item" data-section="monetization">
-            <span>Monetization</span>
-          </button>
-          <button class="nav-item" data-section="infinity">
-            <span>Sonsuzluk Merkezi</span>
-          </button>
+          <div class="nav-title">Katmanlar</div>
+          <button class="nav-item nav-item-active">Genel Bakış</button>
+          <button class="nav-item">Core (Beyin)</button>
+          <button class="nav-item">Growth</button>
+          <button class="nav-item">Services</button>
+          <button class="nav-item">Sharing</button>
+          <button class="nav-item">Security</button>
+          <button class="nav-item">Updating</button>
+          <button class="nav-item">Komutlar</button>
+          <button class="nav-item">Monetization</button>
+          <button class="nav-item">Sonsuzluk Merkezi</button>
         </nav>
 
-        <footer class="sidebar-footer">
-          <div class="version-pill">UI v1.0</div>
-          <div class="version-pill muted" id="api-mode-pill">API mock</div>
-        </footer>
+        <div class="sidebar-footer">
+          <div class="version-tag">UI v1.0</div>
+          <div class="version-tag muted">API durum: <span id="api-short-status">OFF</span></div>
+        </div>
       </aside>
 
       <!-- Sağ Ana Alan -->
       <main class="main">
         <header class="main-header">
           <div>
-            <h1 id="main-title">Genel Bakış</h1>
-            <p id="main-subtitle">
-              Tüm katmanları buradan izleyip yönetebilirsin.
-            </p>
+            <h1>Genel Bakış</h1>
+            <p class="subtitle">Tüm katmanları buradan izleyip yönetebilirsin.</p>
           </div>
-          <div class="main-header-actions">
-            <button id="btn-refresh" class="btn primary">Yenile</button>
-            <button id="btn-live-toggle" class="btn secondary">
-              Live
-            </button>
+          <div class="header-actions">
+            <button id="refresh-btn" class="btn ghost">Yenile</button>
+            <button class="btn primary">Live</button>
           </div>
         </header>
 
-        <!-- Üst kartlar -->
+        <!-- Üst istatistik kartları -->
         <section class="cards-row">
           <article class="card">
-            <h2>Bugünkü Ziyaret</h2>
-            <p class="metric" id="metric-today-visits">--</p>
-            <p class="metric-sub">Son 24 saat</p>
+            <div class="card-label">Bugünkü Ziyaret</div>
+            <div class="card-value" id="metric-today-visits">–</div>
+            <div class="card-helper">Son 24 saat</div>
           </article>
+
           <article class="card">
-            <h2>Aktif Kullanıcı</h2>
-            <p class="metric" id="metric-active-users">--</p>
-            <p class="metric-sub">Canlı oturum</p>
+            <div class="card-label">Aktif Kullanıcı</div>
+            <div class="card-value" id="metric-active-users">–</div>
+            <div class="card-helper">Canlı oturum</div>
           </article>
+
           <article class="card">
-            <h2>Büyüme Oranı</h2>
-            <p class="metric" id="metric-growth-rate">--</p>
-            <p class="metric-sub">Genel trend</p>
+            <div class="card-label">Büyüme Oranı</div>
+            <div class="card-value" id="metric-growth-rate">–</div>
+            <div class="card-helper">Genel trend</div>
           </article>
         </section>
 
-        <!-- Sistem Sağlığı + Ortak Konuşuyor -->
-        <section class="layout-split">
-          <article class="card stretch">
+        <!-- Orta bloklar -->
+        <section class="grid-2">
+          <!-- Sistem Sağlığı -->
+          <article class="card card-large">
             <div class="card-header">
-              <h2>Sistem Sağlığı Detayı</h2>
+              <div>
+                <div class="card-title">Sistem Sağlığı Detayı</div>
+                <div class="card-helper">
+                  API çalışma, gecikme ve hata oranını gösterir.
+                </div>
+              </div>
             </div>
+
             <div class="health-row">
               <div class="health-label">API çalışma</div>
               <div class="health-bar">
-                <div id="bar-api-uptime" class="health-bar-fill"></div>
+                <div id="health-api" class="health-fill"></div>
               </div>
-              <span id="label-api-uptime" class="health-value">--</span>
+              <div id="health-api-text" class="health-value">–</div>
             </div>
+
             <div class="health-row">
               <div class="health-label">Ortalama gecikme</div>
               <div class="health-bar">
-                <div id="bar-latency" class="health-bar-fill"></div>
+                <div id="health-latency" class="health-fill"></div>
               </div>
-              <span id="label-latency" class="health-value">--</span>
+              <div id="health-latency-text" class="health-value">–</div>
             </div>
+
             <div class="health-row">
               <div class="health-label">Hata oranı</div>
               <div class="health-bar">
-                <div id="bar-error" class="health-bar-fill"></div>
+                <div id="health-errors" class="health-fill"></div>
               </div>
-              <span id="label-error" class="health-value">--</span>
+              <div id="health-errors-text" class="health-value">–</div>
             </div>
           </article>
 
-          <article class="card stretch">
+          <!-- Ortak Konuşuyor -->
+          <article class="card card-large">
             <div class="card-header">
-              <h2>Ortak Konuşuyor</h2>
-            </div>
-            <div class="ortak-stream" id="ortak-stream">
-              <div class="ortak-message muted">
-                Ortak henüz konuşmadı. API bağlanınca buraya son özetler
-                düşecek.
+              <div>
+                <div class="card-title">Ortak Konuşuyor</div>
+                <div class="card-helper">
+                  Ortak motoru, API’den gelen son özeti buraya yazar.
+                </div>
               </div>
+              <button id="force-summary-btn" class="btn ghost small">
+                Özeti Güncelle
+              </button>
+            </div>
+
+            <div class="ortak-output" id="ortak-summary">
+              Ortak henüz konuşmadı. API bağlanınca buraya son özetler düşecek.
             </div>
           </article>
         </section>
 
-        <!-- Son Olaylar -->
-        <section class="card">
-          <div class="card-header">
-            <h2>Son Olaylar (Log)</h2>
-          </div>
-          <ul id="event-log" class="event-log"></ul>
+        <!-- Alt kısım: acil mod, panel kilit vb. -->
+        <section class="bottom-actions">
+          <button class="btn outline">Paneli Kilitle</button>
+          <button class="btn outline">Acil Kilitle</button>
+          <button class="btn danger">Acil Mod</button>
         </section>
       </main>
     </div>
