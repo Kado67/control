@@ -1,137 +1,234 @@
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <title>InflowAI Kontrol Merkezi</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="app-shell">
-    <!-- SOL MENÜ -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">IA</div>
-        <div class="brand-text">
-          <h1>InflowAI</h1>
-          <p>Kontrol Merkezi</p>
-        </div>
-      </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>InflowAI Kontrol Merkezi – Ortak Asistan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      <div class="api-status-box">
-        <span class="api-status-dot" id="api-status-dot"></span>
-        <div class="api-status-text">
-          <div id="api-status-label">API durumu kontrol ediliyor…</div>
-          <small id="api-status-sub">Canlı bağlantı testi</small>
-        </div>
-      </div>
+    <!-- UI stilleri -->
+    <link rel="stylesheet" href="styles.css" />
 
-      <nav class="sidebar-nav">
-        <button class="nav-item active" data-section="overview">Genel Bakış</button>
-        <button class="nav-item" data-section="core">Core (Beyin)</button>
-        <button class="nav-item" data-section="growth">Growth</button>
-        <button class="nav-item" data-section="services">Services</button>
-        <button class="nav-item" data-section="sharing">Sharing</button>
-        <button class="nav-item" data-section="security">Security</button>
-        <button class="nav-item" data-section="updating">Updating</button>
-        <button class="nav-item" data-section="commands">Komutlar</button>
-        <button class="nav-item" data-section="monetization">Monetization</button>
-        <button class="nav-item" data-section="infinity">Sonsuzluk Merkezi</button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="tag-row">
-          <span class="tag">UI v1.0</span>
-          <span class="tag tag-outline" id="api-mode-tag">API: Live</span>
-        </div>
-        <small class="hint">Bu panelden sadece platformu yönetiyorsun, 
-          ziyaretçi görmüyor.</small>
-      </div>
-    </aside>
-
-    <!-- SAĞ ANA ALAN -->
-    <main class="main">
-      <!-- Üst bar -->
-      <header class="top-bar">
-        <div>
-          <h2 id="section-title">Genel Bakış</h2>
-          <p id="section-subtitle">
-            Tüm katmanların nabzını buradan takip edebilirsin.
-          </p>
-        </div>
-
-        <div class="top-actions">
-          <div class="pill">
-            <span id="last-check-label">Son kontrol: bekleniyor…</span>
+    <!-- Ortak Asistan mantığı -->
+    <script src="scripts.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- SOL: LOGO + API DURUMU + KATMANLAR -->
+      <aside class="sidebar">
+        <header class="brand">
+          <div class="brand-icon">
+            <span class="brand-orbit"></span>
+            <span class="brand-core"></span>
           </div>
-        </div>
-      </header>
+          <div class="brand-text">
+            <div class="brand-name">InflowAI</div>
+            <div class="brand-sub">Kontrol Merkezi</div>
+          </div>
+        </header>
 
-      <!-- Kart alanı -->
-      <section class="cards" id="overview-section">
-        <article class="card card-large">
-          <h3>Platform Durumu</h3>
-          <p class="card-desc">
-            Rakamlara boğmadan sana büyük resmi gösteren özet.
-          </p>
-          <div class="status-grid">
-            <div class="status-item">
-              <span class="status-label">Genel Sağlık</span>
-              <span class="status-value" id="overview-health">—</span>
-              <span class="status-sub">Core + API + Güvenlik</span>
+        <!-- API / ORTAK DURUMU -->
+        <section class="card card-api">
+          <div class="card-header">
+            <span class="card-title">Ortak Bağlantı</span>
+            <span id="apiModeBadge" class="pill pill-mock">Mock</span>
+          </div>
+
+          <div class="api-status-line">
+            <span class="status-dot" id="apiStatusDot"></span>
+            <span id="apiStatusText">Bağlantı kontrol ediliyor...</span>
+          </div>
+
+          <div class="api-meta">
+            <div class="meta-item">
+              <span class="meta-label">Mod</span>
+              <span id="apiModeText" class="meta-value">Bilinmiyor</span>
             </div>
-            <div class="status-item">
-              <span class="status-label">Mod</span>
-              <span class="status-value" id="overview-mode">Bekleniyor</span>
-              <span class="status-sub">Canlı / İzleme / Acil</span>
+            <div class="meta-item">
+              <span class="meta-label">Uptime</span>
+              <span id="apiUptimeText" class="meta-value">–</span>
             </div>
-            <div class="status-item">
-              <span class="status-label">Uptime (dk)</span>
-              <span class="status-value" id="overview-uptime">—</span>
-              <span class="status-sub">API çalışma süresi</span>
+            <div class="meta-item">
+              <span class="meta-label">Son Kontrol</span>
+              <span id="apiLastCheckText" class="meta-value">–</span>
             </div>
           </div>
-        </article>
 
-        <article class="card">
-          <h3>Core (Beyin)</h3>
-          <p class="card-desc">
-            Asistan, üretim ve karar mekanizması burada birleşiyor.
-          </p>
-          <ul class="plain-list" id="core-summary-list">
-            <li>Durum: <strong>Hazır</strong> (temel API bağlantısı çalışıyor)</li>
-            <li>Sonraki adım: Katman bazlı detay API'leri ekleyeceğiz.</li>
+          <button id="btnRefreshStatus" class="btn btn-outline full-width">
+            Bağlantıyı Yenile
+          </button>
+        </section>
+
+        <!-- KATMAN LİSTESİ -->
+        <section class="card card-layers">
+          <div class="card-header">
+            <span class="card-title">Katmanlar</span>
+          </div>
+          <ul class="layer-list">
+            <li class="layer-item active">
+              <span class="layer-dot layer-core"></span>
+              <span>Core (Beyin)</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-growth"></span>
+              <span>Growth</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-services"></span>
+              <span>Services</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-sharing"></span>
+              <span>Sharing</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-security"></span>
+              <span>Security</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-updating"></span>
+              <span>Updating</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-commands"></span>
+              <span>Komutlar</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-monetization"></span>
+              <span>Monetization</span>
+            </li>
+            <li class="layer-item">
+              <span class="layer-dot layer-infinity"></span>
+              <span>Sonsuzluk Merkezi</span>
+            </li>
           </ul>
-        </article>
+        </section>
+      </aside>
 
-        <article class="card">
-          <h3>Güvenli Büyüme</h3>
-          <p class="card-desc">
-            Ziyaretçi ve içerik sayısını buradan değil, ana platformdan
-            takip edeceksin. Burada sadece “kontrol” var.
-          </p>
-          <ul class="plain-list">
-            <li>Reklam / ödeme entegrasyonu: Daha sonra açılacak.</li>
-            <li>Şu an odak: API bağlantısı, stabilite, katman mimarisi.</li>
-          </ul>
-        </article>
-      </section>
-
-      <!-- Diğer bölümler için tek bir dinamik alan -->
-      <section class="cards hidden" id="dynamic-section">
-        <article class="card card-large">
-          <h3 id="dynamic-title">Başlık</h3>
-          <p class="card-desc" id="dynamic-desc">
-            Açıklama.
-          </p>
-          <div class="dynamic-content" id="dynamic-content">
-            <!-- JS burayı dolduruyor -->
+      <!-- SAĞ: GENEL ÖZET + ORTAK CHATGPT PANELİ -->
+      <main class="main">
+        <!-- ÜST BAR -->
+        <header class="topbar">
+          <div>
+            <h1 class="page-title">Genel Bakış &amp; Ortak Asistan</h1>
+            <p class="page-subtitle">
+              Tüm katmanların nabzı ve platformun ChatGPT’si aynı ekranda.
+            </p>
           </div>
-        </article>
-      </section>
-    </main>
-  </div>
 
-  <script src="scripts.js" defer></script>
-</body>
+          <div class="topbar-right">
+            <span class="chip">UI v1.0</span>
+            <span id="topbarApiChip" class="chip chip-danger">API: Kapalı</span>
+          </div>
+        </header>
+
+        <!-- GENEL ÖZET KARTLARI -->
+        <section class="grid grid-overview">
+          <article class="card">
+            <div class="card-header">
+              <span class="card-title">Platform Durumu</span>
+            </div>
+            <div class="card-body">
+              <div class="status-block">
+                <span class="status-label">Genel Sağlık</span>
+                <span id="summaryHealth" class="status-value">–</span>
+                <small id="summaryHealthNote" class="status-note">
+                  Core + API + Güvenlik
+                </small>
+              </div>
+
+              <div class="status-block">
+                <span class="status-label">Mod</span>
+                <span id="summaryMode" class="status-value">–</span>
+                <small class="status-note">
+                  Canlı / İzleme / Acil / Mock
+                </small>
+              </div>
+
+              <div class="status-block">
+                <span class="status-label">Odak</span>
+                <span id="summaryFocus" class="status-value status-small">
+                  – 
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <span class="card-title">Ortak Görevleri</span>
+            </div>
+            <div class="card-body">
+              <ul id="featureList" class="feature-list">
+                <!-- JS ile doldurulacak -->
+              </ul>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <span class="card-title">Hızlı Kontroller</span>
+            </div>
+            <div class="card-body quick-actions">
+              <button id="qaSummary" class="btn btn-soft">
+                Genel Özeti Çek
+              </button>
+              <button id="qaHealth" class="btn btn-soft">
+                Sağlık Kontrolü
+              </button>
+              <button id="qaMetrics" class="btn btn-soft">
+                Metrik Analizi
+              </button>
+              <button id="qaTasks" class="btn btn-soft">
+                Görevleri Listele
+              </button>
+            </div>
+          </article>
+        </section>
+
+        <!-- ORTAK CHAT PANELİ (CHATGPT GİBİ) -->
+        <section class="card card-chat">
+          <div class="card-header">
+            <span class="card-title">Ortak Asistan</span>
+            <span class="card-caption">
+              InflowAI’nin beyni – Tüm katmanları buradan yönet.
+            </span>
+          </div>
+
+          <div id="chatMessages" class="chat-messages">
+            <!-- JS: Mesaj balonları buraya eklenecek -->
+          </div>
+
+          <footer class="chat-footer">
+            <div class="chat-input-row">
+              <textarea
+                id="chatInput"
+                class="chat-input"
+                rows="1"
+                placeholder="Ortak'a komut yaz: Örneğin 'Core sağlığını kontrol et', 'Growth özetini ver', 'Sonsuzluk Merkezi yedeğini kontrol et'..."
+              ></textarea>
+              <button id="btnSend" class="btn btn-primary chat-send">
+                Gönder
+              </button>
+            </div>
+
+            <div class="chat-hints">
+              <span class="hint-label">Örnek komutlar:</span>
+              <button class="hint-chip" data-prompt="Core sağlığını kontrol et.">
+                Core sağlığı
+              </button>
+              <button class="hint-chip" data-prompt="Tüm katmanların genel özetini ver.">
+                Genel özet
+              </button>
+              <button class="hint-chip" data-prompt="Sonsuzluk Merkezi'ni kısaca anlat.">
+                Sonsuzluk Merkezi
+              </button>
+              <button class="hint-chip" data-prompt="Bugün odaklanmam gereken 3 maddeyi söyle.">
+                Günlük odak
+              </button>
+            </div>
+          </footer>
+        </section>
+      </main>
+    </div>
+  </body>
 </html>
