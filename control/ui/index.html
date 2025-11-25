@@ -1,149 +1,158 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>InflowAI Kontrol Merkezi — ORTAK</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="app">
-    <!-- Sol Mini Menü (sade) -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="logo"></div>
-        <div class="brand-text">
-          <div class="brand-title">InflowAI</div>
-          <div class="brand-sub">Kontrol Merkezi — ORTAK</div>
-        </div>
-      </div>
-
-      <nav class="nav">
-        <button class="nav-item active" data-view="ortak">
-          <span class="dot"></span>
-          <span>ORTAK</span>
-        </button>
-      </nav>
-
-      <div class="side-footer">
-        <div class="pill">UI v1.2</div>
-        <div class="pill" id="apiModePill">API live</div>
-      </div>
-    </aside>
-
-    <!-- Ana Alan -->
-    <main class="main">
-      <!-- Üst Bar -->
-      <header class="topbar card glass">
-        <div class="top-left">
-          <h1>InflowAI Kontrol Merkezi</h1>
-          <p>ORTAK Motoru — Özellik Yönetimi</p>
+  <head>
+    <meta charset="UTF-8" />
+    <title>InflowAI Kontrol Merkezi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- Sol Menü -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-logo">IA</div>
+          <div class="brand-text">
+            <div class="brand-name">InflowAI</div>
+            <div class="brand-sub">Kontrol Merkezi</div>
+          </div>
         </div>
 
-        <div class="top-right">
-          <div class="api-status" id="apiStatus">
-            <span class="status-dot" id="apiDot"></span>
-            <div>
-              <div class="status-title">API bağlantısı</div>
-              <div class="status-sub" id="apiText">Kontrol ediliyor...</div>
-            </div>
+        <div class="api-status-box">
+          <div id="api-status-indicator" class="dot dot-offline"></div>
+          <div class="api-status-text">
+            <span id="api-status-label">API bağlantısı yok (mock mod)</span>
+            <small id="api-status-detail">Henüz bağlantı denenmedi</small>
           </div>
-          <button class="btn" id="refreshBtn">Yenile</button>
         </div>
-      </header>
 
-      <!-- Grid -->
-      <section class="grid">
-        <!-- ORTAK ÖZETİ -->
-        <article class="card glass">
-          <div class="card-head">
-            <h2>Ortak Özeti</h2>
-            <span class="mini" id="checkedAt">—</span>
+        <nav class="nav">
+          <button class="nav-item active" data-section="genel">
+            <span>Genel Bakış</span>
+          </button>
+          <button class="nav-item" data-section="core">
+            <span>Core (Beyin)</span>
+          </button>
+          <button class="nav-item" data-section="growth">
+            <span>Growth</span>
+          </button>
+          <button class="nav-item" data-section="services">
+            <span>Services</span>
+          </button>
+          <button class="nav-item" data-section="sharing">
+            <span>Sharing</span>
+          </button>
+          <button class="nav-item" data-section="security">
+            <span>Security</span>
+          </button>
+          <button class="nav-item" data-section="updating">
+            <span>Updating</span>
+          </button>
+          <button class="nav-item" data-section="commands">
+            <span>Komutlar</span>
+          </button>
+          <button class="nav-item" data-section="monetization">
+            <span>Monetization</span>
+          </button>
+          <button class="nav-item" data-section="infinity">
+            <span>Sonsuzluk Merkezi</span>
+          </button>
+        </nav>
+
+        <footer class="sidebar-footer">
+          <div class="version-pill">UI v1.0</div>
+          <div class="version-pill muted" id="api-mode-pill">API mock</div>
+        </footer>
+      </aside>
+
+      <!-- Sağ Ana Alan -->
+      <main class="main">
+        <header class="main-header">
+          <div>
+            <h1 id="main-title">Genel Bakış</h1>
+            <p id="main-subtitle">
+              Tüm katmanları buradan izleyip yönetebilirsin.
+            </p>
           </div>
+          <div class="main-header-actions">
+            <button id="btn-refresh" class="btn primary">Yenile</button>
+            <button id="btn-live-toggle" class="btn secondary">
+              Live
+            </button>
+          </div>
+        </header>
 
-          <div class="summary-row">
-            <div class="summary-box">
-              <div class="label">Ruh Hâli</div>
-              <div class="value" id="moodValue">—</div>
-              <div class="sub" id="moodReason">—</div>
+        <!-- Üst kartlar -->
+        <section class="cards-row">
+          <article class="card">
+            <h2>Bugünkü Ziyaret</h2>
+            <p class="metric" id="metric-today-visits">--</p>
+            <p class="metric-sub">Son 24 saat</p>
+          </article>
+          <article class="card">
+            <h2>Aktif Kullanıcı</h2>
+            <p class="metric" id="metric-active-users">--</p>
+            <p class="metric-sub">Canlı oturum</p>
+          </article>
+          <article class="card">
+            <h2>Büyüme Oranı</h2>
+            <p class="metric" id="metric-growth-rate">--</p>
+            <p class="metric-sub">Genel trend</p>
+          </article>
+        </section>
+
+        <!-- Sistem Sağlığı + Ortak Konuşuyor -->
+        <section class="layout-split">
+          <article class="card stretch">
+            <div class="card-header">
+              <h2>Sistem Sağlığı Detayı</h2>
             </div>
-            <div class="summary-box">
-              <div class="label">Sağlık Skoru</div>
-              <div class="value" id="healthValue">—</div>
-              <div class="sub">Ortak analizinden</div>
+            <div class="health-row">
+              <div class="health-label">API çalışma</div>
+              <div class="health-bar">
+                <div id="bar-api-uptime" class="health-bar-fill"></div>
+              </div>
+              <span id="label-api-uptime" class="health-value">--</span>
             </div>
-            <div class="summary-box">
-              <div class="label">Son Güncelleme</div>
-              <div class="value" id="lastUpdate">—</div>
-              <div class="sub">UI saatine göre</div>
+            <div class="health-row">
+              <div class="health-label">Ortalama gecikme</div>
+              <div class="health-bar">
+                <div id="bar-latency" class="health-bar-fill"></div>
+              </div>
+              <span id="label-latency" class="health-value">--</span>
             </div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="hero-note" id="summaryNote">
-            Ortak özet üretiyor...
-          </div>
-        </article>
-
-        <!-- PLATFORM GÖMÜLÜ ÖZELLİKLER -->
-        <article class="card glass">
-          <div class="card-head">
-            <h2>Platform Gömülü Özellikler</h2>
-            <span class="mini" id="embeddedCount">0 özellik</span>
-          </div>
-
-          <ul class="feature-list" id="embeddedList">
-            <li class="empty">Yükleniyor...</li>
-          </ul>
-        </article>
-
-        <!-- ORTAK'IN BULDUĞU / ÖNERDİĞİ ÖZELLİKLER -->
-        <article class="card glass">
-          <div class="card-head">
-            <h2>Ortak’ın Bulduğu / Önerdiği Özellikler</h2>
-            <span class="mini" id="suggestedCount">0 özellik</span>
-          </div>
-
-          <ul class="feature-list" id="suggestedList">
-            <li class="empty">Yükleniyor...</li>
-          </ul>
-        </article>
-
-        <!-- ORTAK KONUŞMA PANELİ -->
-        <article class="card glass chat-card">
-          <div class="card-head">
-            <h2>Ortak Konuşma</h2>
-            <div class="chat-actions">
-              <button class="btn ghost" id="clearChatBtn">Temizle</button>
-              <button class="btn" id="openChatBtn">Konuş</button>
+            <div class="health-row">
+              <div class="health-label">Hata oranı</div>
+              <div class="health-bar">
+                <div id="bar-error" class="health-bar-fill"></div>
+              </div>
+              <span id="label-error" class="health-value">--</span>
             </div>
+          </article>
+
+          <article class="card stretch">
+            <div class="card-header">
+              <h2>Ortak Konuşuyor</h2>
+            </div>
+            <div class="ortak-stream" id="ortak-stream">
+              <div class="ortak-message muted">
+                Ortak henüz konuşmadı. API bağlanınca buraya son özetler
+                düşecek.
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <!-- Son Olaylar -->
+        <section class="card">
+          <div class="card-header">
+            <h2>Son Olaylar (Log)</h2>
           </div>
+          <ul id="event-log" class="event-log"></ul>
+        </section>
+      </main>
+    </div>
 
-          <div class="chat-window" id="chatWindow"></div>
-
-          <div class="chat-input">
-            <input id="chatInput" type="text" placeholder="Ortak'a bir şey sor..." />
-            <button class="btn" id="sendChatBtn">Gönder</button>
-          </div>
-
-          <div class="chat-hint">
-            Not: Şu an konuşma UI içinde çalışır. İleride API’ye chat endpoint ekleyince buradan bağlayacağız.
-          </div>
-        </article>
-
-        <!-- CANLI GÜNLÜK -->
-        <article class="card glass log-card">
-          <div class="card-head">
-            <h2>Canlı Günlük</h2>
-            <span class="mini" id="logCount">0 kayıt</span>
-          </div>
-          <pre class="log" id="logBox"></pre>
-        </article>
-      </section>
-    </main>
-  </div>
-
-  <script src="scripts.js"></script>
-</body>
+    <script src="scripts.js"></script>
+  </body>
 </html>
