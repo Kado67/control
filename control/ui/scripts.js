@@ -1,219 +1,191 @@
-// scripts.js
-// =========================================
-// InflowAI Kontrol Merkezi - UI Script
-// API: Render (inflowai-api.onrender.com)
-// =========================================
+// InflowAI Kontrol Merkezi - Frontend Mantığı
+// API: https://inflowai-api.onrender.com
 
 const API_BASE = "https://inflowai-api.onrender.com";
 
-// --------- Yardımcılar ---------
-function $(selector) {
-  return document.querySelector(selector);
+// DOM referansları
+const apiStatusPill = document.getElementById("api-status-pill");
+const apiStatusText = document.getElementById("api-status-text");
+const apiShortStatus = document.getElementById("api-short-status");
+
+const metricTodayVisits = document.getElementById("metric-today-visits");
+const metricActiveUsers = document.getElementById("metric-active-users");
+const metricGrowthRate = document.getElementById("metric-growth-rate");
+
+const healthApiFill = document.getElementById("health-api");
+const healthLatencyFill = document.getElementById("health-latency");
+const healthErrorsFill = document.getElementById("health-errors");
+const healthApiText = document.getElementById("health-api-text");
+const healthLatencyText = document.getElementById("health-latency-text");
+const healthErrorsText = document.getElementById("health-errors-text");
+
+const ortakSummaryBox = document.getElementById("ortak-summary");
+const refreshBtn = document.getElementById("refresh-btn");
+const forceSummaryBtn = document.getElementById("force-summary-btn");
+
+// ---------------------------
+// Yardımcı fonksiyonlar
+// ---------------------------
+
+function setApiConnected(connected, info) {
+  if (connected) {
+    apiStatusPill.classList.remove("status-disconnected");
+    apiStatusPill.classList.add("status-connected");
+    apiStatusText.textContent = "API bağlı (canlı)";
+    apiShortStatus.textContent = "ON";
+
+    if (info && info.timestamp) {
+      apiStatusText.textContent = `API bağlı (son kontrol: ${new Date(
+        info.timestamp
+      ).toLocaleTimeString("tr-TR")})`;
+    }
+  } else {
+    apiStatusPill.classList.remove("status-connected");
+    apiStatusPill.classList.add("status-disconnected");
+    apiStatusText.textContent = "API bağlantısı yok (mock mod)";
+    apiShortStatus.textContent = "OFF";
+  }
 }
 
-function setText(selector, value) {
-  const el = $(selector);
-  if (el) el.textContent = value;
+// Metrics'i basitçe doldur (şimdilik API'den bağımsız mock)
+function updateBasicMetrics() {
+  // Bu değerleri istersen gerçek metrik endpoint'ine göre değiştirebiliriz.
+  metricTodayVisits.textContent = "120";
+  metricActiveUsers.textContent = "90";
+  metricGrowthRate.textContent = "3.4%";
 }
 
-function addLogRow(time, source, message) {
-  const tbody = $("#log-body");
-  if (!tbody) return;
+// Sağlık bar'larını doldur
+function updateHealthBars(options) {
+  const apiScore = options.apiScore ?? 96;
+  const latencyMs = options.latencyMs ?? 82;
+  const errorRate = options.errorRate ?? 1.2;
 
-  const tr = document.createElement("tr");
+  healthApiFill.style.width = `${apiScore}%`;
+  healthApiText.textContent = `${apiScore}%`;
 
-  const tdTime = document.createElement("td");
-  tdTime.textContent = time;
+  const latencyPercent = Math.max(0, 100 - latencyMs / 3);
+  healthLatencyFill.style.width = `${latencyPercent}%`;
+  healthLatencyText.textContent = `${latencyMs.toFixed(0)} ms`;
 
-  const tdSource = document.createElement("td");
-  tdSource.textContent = source;
-
-  const tdMsg = document.createElement("td");
-  tdMsg.textContent = message;
-
-  tr.appendChild(tdTime);
-  tr.appendChild(tdSource);
-  tr.appendChild(tdMsg);
-
-  tbody.appendChild(tr);
+  const errorPercent = Math.min(100, errorRate * 8);
+  healthErrorsFill.style.width = `${100 - errorPercent}%`;
+  healthErrorsText.textContent = `${errorRate.toFixed(1)}%`;
 }
 
-// --------- API durumunu yükle ---------
-async function fetchJson(path) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { Accept: "application/json" },
+// Gelen summary objesini okunur hale getir
+function formatSummary(summary) {
+  if (!summary) {
+    return "Ortak henüz konuşmadı.";
+  }
+
+  if (typeof summary === "string") {
+    return summary;
+  }
+
+  const parts = [];
+
+  if (summary.headline) parts.push(summary.headline);
+  if (summary.growthNote) parts.push(summary.growthNote);
+  if (Array.isArray(summary.highlights)) {
+    parts.push(summary.highlights.join(" • "));
+  }
+
+  // Bilinmeyen yapı için fallback
+  if (parts.length === 0) {
+    return JSON.stringify(summary, null, 2);
+  }
+
+  return parts.join("\n\n");
+}
+
+// ---------------------------
+// API Çağrıları
+// ---------------------------
+
+async function pingApi() {
+  try {
+    const res = await fetch(`${API_BASE}/api/status`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Status kodu uygun değil: " + res.status);
+    }
+
+    const data = await res.json();
+    setApiConnected(true, data);
+
+    // Sağlık + metrikler
+    updateBasicMetrics();
+    updateHealthBars({
+      apiScore: 97,
+      latencyMs: 80,
+      errorRate: 0.8,
+    });
+
+    return true;
+  } catch (err) {
+    console.error("API ping hatası:", err);
+    setApiConnected(false);
+    updateHealthBars({
+      apiScore: 10,
+      latencyMs: 500,
+      errorRate: 20,
+    });
+    return false;
+  }
+}
+
+async function loadOrtakSummary() {
+  try {
+    const res = await fetch(`${API_BASE}/api/ortak/summary`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Summary status kodu uygun değil: " + res.status);
+    }
+
+    const body = await res.json();
+    const formatted = formatSummary(body.data);
+    ortakSummaryBox.textContent = formatted;
+  } catch (err) {
+    console.error("Summary çekilirken hata:", err);
+    ortakSummaryBox.textContent =
+      "Ortak şu an cevap veremedi. API bağlantısı kurulamadı veya summary endpoint'i hazır değil.";
+  }
+}
+
+// ---------------------------
+// Başlatma
+// ---------------------------
+
+async function initDashboard() {
+  const ok = await pingApi();
+
+  if (ok) {
+    loadOrtakSummary();
+  } else {
+    ortakSummaryBox.textContent =
+      "API'ye ulaşamıyoruz. Render servisinin çalıştığından emin ol ve tekrar dene.";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initDashboard();
+
+  refreshBtn.addEventListener("click", () => {
+    initDashboard();
   });
 
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-async function loadDashboard() {
-  // İlk durum: yükleniyor
-  setText("#api-status-text", "API kontrol ediliyor...");
-  document.body.classList.add("loading");
-
-  try {
-    // Root veya /api/status ikisi de sağlık bilgisi veriyor
-    const statusData = await fetchJson("/");
-    // İsteğe bağlı: ortak özet; gelmezse sorun değil
-    let summary = null;
-    try {
-      const summaryWrap = await fetchJson("/api/ortak/summary");
-      summary = summaryWrap && summaryWrap.data ? summaryWrap.data : null;
-    } catch (e) {
-      // Özet gelmezse sessizce geç
-      summary = null;
-    }
-
-    updateFromStatus(statusData, summary);
-  } catch (err) {
-    console.error("API bağlantı hatası:", err);
-    setMockMode();
-  } finally {
-    document.body.classList.remove("loading");
-  }
-}
-
-// --------- Gerçek verilerle ekranı güncelle ---------
-function updateFromStatus(statusData, summary) {
-  // 1) API durumu
-  const pill = $("#api-status-pill");
-  if (pill) {
-    pill.classList.remove("status-error");
-    pill.classList.add("status-live");
-  }
-  setText("#api-status-text", "API bağlantısı aktif (live mod)");
-
-  // 2) Metrix (özetten al, yoksa makul fallback)
-  const s = summary || {};
-  const overview = s.overview || {};
-
-  const todayVisits = overview.todayVisits ?? 120;
-  const activeUsers = overview.activeUsers ?? 90;
-  const growthRate = overview.growthRate ?? 3.4;
-
-  setText("#metric-today-visits", todayVisits.toString());
-  setText("#metric-active-users", activeUsers.toString());
-  setText(
-    "#metric-growth-rate",
-    `${typeof growthRate === "number" ? growthRate.toFixed(1) : growthRate}%`
-  );
-
-  // 3) Sistem sağlığı
-  const health = s.health || {};
-  const apiUp = health.apiUptime ?? 100;
-  const latency = health.avgLatencyMs ?? 180;
-  const errorRate = health.errorRate ?? 1.5;
-
-  setText("#health-api", `${apiUp}%`);
-  setText("#health-latency", `${latency} ms`);
-  setText("#health-error", `${errorRate}%`);
-
-  // Progress bar genişlikleri (varsa)
-  const barApi = $("#bar-api");
-  const barLatency = $("#bar-latency");
-  const barError = $("#bar-error");
-
-  if (barApi) barApi.style.width = `${Math.min(apiUp, 100)}%`;
-  if (barLatency) {
-    // Latency ters mantıkla: düşük ms = yüksek bar
-    const norm = Math.max(0, Math.min(100, 120 - latency)); // 0-120 ms arası
-    barLatency.style.width = `${norm}%`;
-  }
-  if (barError) {
-    const normErr = Math.max(0, Math.min(100, 100 - errorRate * 5));
-    barError.style.width = `${normErr}%`;
-  }
-
-  // 4) Ortak Konuşuyor (daima dolu olsun)
-  const uptimeSec = statusData.uptime || 0;
-  const uptimeMin = Math.floor(uptimeSec / 60);
-
-  let highlightLines = [];
-
-  highlightLines.push("Ortak: API stabil, canlı modda çalışıyor.");
-  if (uptimeMin > 0) {
-    highlightLines.push(`Çalışma süresi: yaklaşık ${uptimeMin} dakika.`);
-  } else {
-    highlightLines.push("İnfra yeni başlatıldı, gözlem sürüyor.");
-  }
-
-  if (growthRate && typeof growthRate === "number") {
-    if (growthRate > 0) {
-      highlightLines.push(`Büyüme oranı pozitif (+${growthRate.toFixed(1)}%).`);
-    } else if (growthRate < 0) {
-      highlightLines.push(
-        `Büyüme oranı negatif (${growthRate.toFixed(
-          1
-        )}%). Sebepler analiz ediliyor.`
-      );
-    }
-  }
-
-  // Eğer backend özetten ekstra highlight gönderiyorsa ekle
-  if (summary && Array.isArray(summary.highlights)) {
-    highlightLines = highlightLines.concat(summary.highlights);
-  }
-
-  const highlightText = highlightLines.join("  •  ");
-  setText("#ortak-highlight", highlightText);
-
-  // 5) Log satırları
-  const now = new Date();
-  const timeStr = `[${now.getHours().toString().padStart(2, "0")}:${now
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}]`;
-
-  // Önce body'yi temizle
-  const tbody = $("#log-body");
-  if (tbody) tbody.innerHTML = "";
-
-  addLogRow(timeStr, "API", "Bağlantı başarılı, canlı modda.");
-  addLogRow(timeStr, "Ortak", "Gerçek özet yüklendi ve analiz edildi.");
-  addLogRow(timeStr, "Sistem", "Kontrol paneli verileri güncellendi.");
-}
-
-// --------- Mock moda düşme (API yoksa) ---------
-function setMockMode() {
-  const pill = $("#api-status-pill");
-  if (pill) {
-    pill.classList.remove("status-live");
-    pill.classList.add("status-error");
-  }
-  setText("#api-status-text", "API bağlantısı yok (mock mod)");
-
-  // Metrixleri sıfırla
-  setText("#metric-today-visits", "0");
-  setText("#metric-active-users", "0");
-  setText("#metric-growth-rate", "0%");
-
-  setText("#health-api", "0%");
-  setText("#health-latency", "-");
-  setText("#health-error", "-");
-
-  const barApi = $("#bar-api");
-  const barLatency = $("#bar-latency");
-  const barError = $("#bar-error");
-
-  if (barApi) barApi.style.width = "0%";
-  if (barLatency) barLatency.style.width = "0%";
-  if (barError) barError.style.width = "0%";
-
-  setText(
-    "#ortak-highlight",
-    "Ortak: API şu anda kapalı. Gösterilen veriler mock/test modunda."
-  );
-
-  const tbody = $("#log-body");
-  if (tbody) {
-    tbody.innerHTML = "";
-    addLogRow("[--:--]", "Sistem", "API'ye ulaşılamadı, mock moda geçildi.");
-  }
-}
-
-// Sayfa yüklendiğinde başlat
-document.addEventListener("DOMContentLoaded", loadDashboard);
+  forceSummaryBtn.addEventListener("click", () => {
+    loadOrtakSummary();
+  });
+});
