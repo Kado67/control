@@ -4,297 +4,282 @@
   <meta charset="UTF-8" />
   <title>InflowAI Kontrol Merkezi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
-    <!-- SIDEBAR -->
+    <!-- SOL MENÜ -->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-logo"></div>
         <div class="brand-text">
           <div class="brand-title">InflowAI</div>
-          <div class="brand-sub">Kontrol Merkezi &amp; ORTAK</div>
+          <div class="brand-sub">Kontrol Merkezi &amp; Ortak</div>
         </div>
       </div>
 
+      <!-- API DURUMU -->
       <div id="api-pill" class="api-pill">
-        <span id="apiDot" class="dot"></span>
-        <span id="apiText" class="api-text">API durumu kontrol ediliyor…</span>
-        <button id="apiTestBtn" class="mini-btn">Test et</button>
+        <div id="apiLamp" class="dot"></div>
+        <span id="apiStatusText" class="api-text">
+          API bağlantısı yok (mock mod)
+        </span>
+        <button id="btnTestApi" class="mini-btn">Test</button>
       </div>
 
+      <!-- NAV (SADECE SAYFAYA KAYDIRIR) -->
       <nav class="nav">
-        <button class="nav-item active" data-page="overview">
-          <span class="nav-ico">🏠</span>
-          <span>Genel Bakış</span>
+        <button class="nav-item active" data-target="#section-overview">
+          <div class="nav-ico">◎</div>
+          <div>Genel Bakış</div>
         </button>
-        <button class="nav-item" data-page="packages">
-          <span class="nav-ico">📦</span>
-          <span>Paketler (Ücretsiz / Premium / Kurumsal / B2B)</span>
+        <button class="nav-item" data-target="#section-ortak">
+          <div class="nav-ico">🤖</div>
+          <div>Ortak</div>
         </button>
-        <button class="nav-item" data-page="ortak">
-          <span class="nav-ico">🤖</span>
-          <span>ORTAK Asistan</span>
+        <button class="nav-item" data-target="#section-commands">
+          <div class="nav-ico">⌨️</div>
+          <div>Komut Konsolu</div>
         </button>
-        <button class="nav-item" data-page="logs">
-          <span class="nav-ico">📜</span>
-          <span>Log &amp; Geçmiş</span>
+        <button class="nav-item" data-target="#section-logs">
+          <div class="nav-ico">📜</div>
+          <div>Loglar</div>
+        </button>
+        <button class="nav-item" data-target="#section-infinity">
+          <div class="nav-ico">∞</div>
+          <div>Sonsuzluk Merkezi</div>
         </button>
       </nav>
 
+      <!-- SÜRÜM & HIZLI İŞLEMLER -->
       <div class="sidebar-footer">
         <div class="version">
-          <div class="version-title">Motor durumu</div>
+          <div class="version-title">InflowAI Kontrol Merkezi</div>
           <div class="version-badges">
-            <span class="badge">ORTAK v1.0</span>
-            <span class="badge ghost">Mock &amp; API mod</span>
+            <span class="badge">Ortak v1</span>
+            <span class="badge ghost">API bağlı</span>
           </div>
         </div>
+
         <div class="quick-actions">
-          <button id="btn-refresh" class="ghost-btn">Verileri yenile</button>
-          <button id="btn-toggle-mock" class="ghost-btn sm">Mock / Live</button>
+          <button id="btnRefreshAll" class="ghost-btn">
+            Verileri yenile
+          </button>
+          <button id="btnMockToggle" class="ghost-btn">
+            Mock / Live
+          </button>
         </div>
       </div>
     </aside>
 
-    <!-- MAIN -->
+    <!-- ANA İÇERİK -->
     <main class="main">
-      <!-- TOPBAR -->
+      <!-- ÜST BAR -->
       <header class="topbar">
         <div class="topbar-left">
           <h1>Kontrol Merkezi</h1>
-          <p>Platformun beyni, Ortak ve paketleri tek yerden yönet.</p>
+          <p>
+            InflowAI platformu, Ortak motoru ve Sonsuzluk Merkezi'nin canlı
+            durumu.
+          </p>
         </div>
         <div class="topbar-right">
           <div class="user-chip">
-            <span class="user-dot"></span>
+            <div class="user-dot"></div>
             <div>
               <div class="user-name">Kadir</div>
-              <div class="user-role">Kurucu &amp; Pilot</div>
+              <div class="user-role">Süper Admin</div>
             </div>
           </div>
         </div>
       </header>
 
-      <!-- PAGES -->
-      <section class="content">
+      <!-- İÇERİK -->
+      <div class="content">
 
         <!-- GENEL BAKIŞ -->
-        <section class="page active" data-page="overview">
+        <section id="section-overview" class="section">
           <div class="grid kpi-grid">
             <div class="card kpi">
               <div class="kpi-label">Bugünkü Ziyaret</div>
-              <div id="kpi-todayVisits" class="kpi-value">-</div>
-              <div class="kpi-sub">Son 24 saatte toplam ziyaret</div>
+              <div id="metricTodayVisits" class="kpi-value">0</div>
+              <div class="kpi-sub">
+                Son güncelleme:
+                <span id="metricVisitsUpdated">-</span>
+              </div>
             </div>
             <div class="card kpi">
-              <div class="kpi-label">Anlık Aktif Kullanıcı</div>
-              <div id="kpi-activeUsers" class="kpi-value">-</div>
-              <div class="kpi-sub">Şu anda çevrimiçi</div>
+              <div class="kpi-label">Aktif Kullanıcı</div>
+              <div id="metricActiveNow" class="kpi-value">0</div>
+              <div class="kpi-sub">Canlı oturum tahmini</div>
             </div>
             <div class="card kpi">
               <div class="kpi-label">Günlük Büyüme</div>
-              <div id="kpi-growthRate" class="kpi-value">-</div>
-              <div class="kpi-sub">Bugün yüzdesel büyüme</div>
+              <div id="metricGrowthRate" class="kpi-value">0%</div>
+              <div class="kpi-sub">
+                Ortak yorumu:
+                <span id="growthHint">-</span>
+              </div>
             </div>
             <div class="card kpi">
               <div class="kpi-label">Sistem Sağlığı</div>
-              <div id="kpi-systemHealth" class="kpi-value">-</div>
-              <div class="kpi-sub">Genel sağlık skoru</div>
+              <div id="metricHealthScore" class="kpi-value">0/100</div>
+              <div class="kpi-sub">
+                Uptime:
+                <span id="uptimeValue">-</span>
+              </div>
             </div>
           </div>
 
           <div class="grid two-col">
+            <!-- Servis Durumu -->
             <div class="card">
               <div class="card-head">
-                <h2>Ortak Özeti</h2>
-                <span id="ortak-mood-pill" class="pill ghost">-</span>
+                <h2>Katman Durumu</h2>
+                <span class="pill ok">Core bağlı</span>
               </div>
-              <p id="ortak-summary-main" class="muted">
-                Ortak sistemden gelen özet burada görünecek.
-              </p>
-              <div class="divider"></div>
+              <div id="serviceList" class="status-list">
+                <!-- JS ile dolduruluyor -->
+              </div>
+            </div>
+
+            <!-- Mini istatistikler -->
+            <div class="card">
+              <div class="card-head">
+                <h2>Özet İstatistikler</h2>
+              </div>
               <div class="mini-grid">
                 <div class="mini">
-                  <div class="mini-title">Trafik</div>
-                  <div id="mini-traffic" class="mini-val">-</div>
+                  <div class="mini-title">Genel Sağlık</div>
+                  <div id="mini-health" class="mini-val">0</div>
+                </div>
+                <div class="mini">
+                  <div class="mini-title">Durum</div>
+                  <div id="mini-state" class="mini-val">-</div>
                 </div>
                 <div class="mini">
                   <div class="mini-title">Uptime</div>
                   <div id="mini-uptime" class="mini-val">-</div>
                 </div>
                 <div class="mini">
-                  <div class="mini-title">Hata Oranı</div>
-                  <div id="mini-error" class="mini-val">-</div>
-                </div>
-                <div class="mini">
                   <div class="mini-title">Latency</div>
                   <div id="mini-latency" class="mini-val">-</div>
                 </div>
                 <div class="mini">
-                  <div class="mini-title">Son Güncelleme</div>
-                  <div id="mini-updated" class="mini-val">-</div>
+                  <div class="mini-title">Error</div>
+                  <div id="mini-error" class="mini-val">-</div>
                 </div>
+              </div>
+              <div class="divider"></div>
+              <div class="muted">
+                Son güncelleme:
+                <span id="last-updated">-</span>
               </div>
             </div>
-
-            <div class="card">
-              <div class="card-head">
-                <h2>Katman Durumu</h2>
-              </div>
-              <div id="service-list" class="status-list"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- PAKETLER -->
-        <section class="page" data-page="packages">
-          <div class="card">
-            <div class="card-head">
-              <h2>Paket Yönetimi</h2>
-              <span class="pill ok">Platformda sadece Ücretsiz paket şu an açık</span>
-            </div>
-            <p class="muted">
-              Buradaki ana amaç: kontlor merkezinden paketleri aç / kapat
-              mantığını kurmak. Şu an durum <strong>kontrol merkezinde tutuluyor</strong>,
-              ileride platform koduna bağlayacağız.
-            </p>
-
-            <div class="toggle-list">
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Ücretsiz Paket</div>
-                  <div class="toggle-desc">Şu anda yayında olan temel paket.</div>
-                </div>
-                <label class="switch">
-                  <input id="pkg-free" type="checkbox" data-label="Ücretsiz Paket" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Premium Paket</div>
-                  <div class="toggle-desc">İçerik limitleri, hız ve ekstra özellikler.</div>
-                </div>
-                <label class="switch">
-                  <input id="pkg-premium" type="checkbox" data-label="Premium" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">Kurumsal Paket</div>
-                  <div class="toggle-desc">Kurumsal müşteriler, ekipler, B2B entegrasyonlar.</div>
-                </div>
-                <label class="switch">
-                  <input id="pkg-kurumsal" type="checkbox" data-label="Kurumsal" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <div class="toggle-item">
-                <div>
-                  <div class="toggle-title">B2B / API Paket</div>
-                  <div class="toggle-desc">Harici şirketlere API / özel hizmet.</div>
-                </div>
-                <label class="switch">
-                  <input id="pkg-b2b" type="checkbox" data-label="B2B" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="divider"></div>
-            <p class="muted">
-              Şu anki aşamada bu anahtarlar <strong>kontrol merkezinde saklanıyor</strong>
-              (localStorage). Sonraki adımda bu durumu API üzerinden platforma bağlayacağız ki
-              gerçekten site tarafında paketler açılıp kapansın.
-            </p>
           </div>
         </section>
 
         <!-- ORTAK -->
-        <section class="page" data-page="ortak">
-          <div class="grid two-col">
-            <div class="card assistant-box">
-              <div class="card-head">
-                <h2>ORTAK – Komut Asistanı</h2>
-                <span id="ortak-mood-chip" class="pill ghost">-</span>
-              </div>
-              <div class="assistant-msg">
-                <div class="assistant-avatar"></div>
-                <div id="assistant-bubble" class="assistant-bubble">
-                  <div class="assistant-title">ORTAK</div>
-                  <p id="assistant-text">
-                    Merhaba Kadir. API bağlantısı hazır olduğunda seninle konuşarak;
-                    büyüme, ziyaretçi ve paketler hakkında öneriler vereceğim.
-                  </p>
-                </div>
-              </div>
-              <div class="assistant-actions">
-                <button id="assistant-btn-summary" class="btn primary">
-                  Güncel özeti getir
-                </button>
-                <button id="assistant-btn-growth" class="btn ghost">
-                  Büyüme tavsiyesi iste
-                </button>
-                <button id="assistant-btn-risk" class="btn ghost">
-                  Riskleri sor
-                </button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <h2>Komut Konsolu</h2>
-              </div>
-              <div class="command-input">
-                <input id="cmd-input" placeholder="Örn: status, restart core, help…" />
-                <button id="cmd-run" class="btn primary">Komutu Çalıştır</button>
-              </div>
-              <div class="command-tags">
-                <button class="tag" data-cmd="status">status</button>
-                <button class="tag" data-cmd="restart core">restart core</button>
-                <button class="tag" data-cmd="scale auto">scale auto</button>
-                <button class="tag" data-cmd="help">help</button>
-              </div>
-              <pre id="cmd-output" class="cmd-output"></pre>
-            </div>
-          </div>
-
-          <div class="card">
+        <section id="section-ortak" class="section">
+          <div class="card assistant-box">
             <div class="card-head">
-              <h2>Ortak Görev Haritası (API /features)</h2>
+              <h2>Ortak — Akıllı Asistan</h2>
+              <span id="ortakMoodPill" class="pill ghost">
+                Mod: Bilinmiyor
+              </span>
             </div>
-            <p class="muted">
-              Bu bölüm Render’daki <code>/api/ortak/features</code> endpoint’inden gelen
-              görev / metrik / mod listesini gösterir.
-            </p>
-            <ul id="features-list" class="bullet"></ul>
+            <div class="assistant-msg">
+              <div class="assistant-avatar"></div>
+              <div id="assistant-bubble" class="assistant-bubble">
+                <div class="assistant-title">Ortak</div>
+                <p id="assistantText">
+                  Merhaba Kadir, InflowAI platformunu izliyorum. API bağlantısı
+                  kurulunca sana canlı özet ve aksiyon önerileri vereceğim.
+                </p>
+              </div>
+            </div>
+            <div class="assistant-actions">
+              <button id="btnAskSummary" class="btn primary">
+                Güncel Özeti Getir
+              </button>
+              <button id="btnAskGrowth" class="btn ghost">
+                Büyüme İçin Öneri
+              </button>
+              <button id="btnAskRisk" class="btn ghost">
+                Riskleri Analiz Et
+              </button>
+            </div>
           </div>
         </section>
 
-        <!-- LOGS -->
-        <section class="page" data-page="logs">
+        <!-- KOMUT KONSOLU -->
+        <section id="section-commands" class="section">
           <div class="card">
             <div class="card-head">
-              <h2>Log &amp; Sistem Olayları</h2>
-              <div class="card-actions">
-                <button id="btn-clear-logs" class="ghost-btn sm">Logları temizle</button>
-              </div>
+              <h2>Komut Konsolu</h2>
+              <span class="pill ghost">Kod Yazmadan Kontrol</span>
             </div>
-            <ul id="log-list" class="log-list"></ul>
+            <div class="command-input">
+              <input
+                id="cmdInput"
+                type="text"
+                placeholder='Örn: status, restart core, scale auto...'
+              />
+              <button id="cmdRun" class="btn primary">Komutu Çalıştır</button>
+            </div>
+            <div class="command-tags">
+              <button class="tag" data-cmd="status">status</button>
+              <button class="tag" data-cmd="restart core">
+                restart core
+              </button>
+              <button class="tag" data-cmd="scale auto">scale auto</button>
+              <button class="tag" data-cmd="clear logs">clear logs</button>
+              <button class="tag" data-cmd="help">help</button>
+            </div>
+            <pre id="cmdOutput" class="cmd-output"></pre>
           </div>
         </section>
 
-      </section>
+        <!-- LOGLAR -->
+        <section id="section-logs" class="section">
+          <div class="card">
+            <div class="card-head">
+              <h2>Canlı Loglar</h2>
+              <button id="btnClearLogs" class="mini-btn">Temizle</button>
+            </div>
+            <ul id="logList" class="log-list"></ul>
+          </div>
+        </section>
+
+        <!-- SONSUZLUK MERKEZİ (NOTLAR) -->
+        <section id="section-infinity" class="section">
+          <div class="card">
+            <div class="card-head">
+              <h2>Sonsuzluk Merkezi Notları</h2>
+              <span class="pill ghost">Platformun Sır Odası</span>
+            </div>
+            <textarea
+              id="notesTextarea"
+              placeholder="Buraya uzun vadeli planlarını, kritik notlarını, acil durum senaryolarını yazabilirsin. Tarayıcıda saklanır, sadece sende kalır."
+            ></textarea>
+            <div class="note-actions">
+              <button id="notesSave" class="btn primary">Notu Kaydet</button>
+              <button id="notesClear" class="btn ghost">
+                Notları Temizle
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- TOAST -->
+      <div id="toast" class="toast">
+        <div id="toast-inner" class="toast-inner"></div>
+      </div>
     </main>
   </div>
 
-  <div id="toast" class="toast">
-    <div id="toast-inner" class="toast-inner">Mesaj</div>
-  </div>
-
-  <script src="./scripts.js"></script>
+  <script src="scripts.js"></script>
 </body>
 </html>
