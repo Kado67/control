@@ -1,149 +1,300 @@
 <!DOCTYPE html>
-<html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <title>InflowAI Kontrol Merkezi</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <!-- Sol Menü -->
-      <aside class="sidebar">
-        <div class="brand">
-          <div class="brand-logo">IA</div>
-          <div class="brand-text">
-            <div class="brand-name">InflowAI</div>
-            <div class="brand-sub">Kontrol Merkezi</div>
+<html lang="tr" class="theme-dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>InflowAI Kontrol Merkezi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo"></div>
+        <div class="brand-text">
+          <div class="brand-title">InflowAI</div>
+          <div class="brand-sub">Kontrol Merkezi &amp; ORTAK</div>
+        </div>
+      </div>
+
+      <div id="api-pill" class="api-pill">
+        <span id="apiDot" class="dot"></span>
+        <span id="apiText" class="api-text">API durumu kontrol ediliyor…</span>
+        <button id="apiTestBtn" class="mini-btn">Test et</button>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-page="overview">
+          <span class="nav-ico">🏠</span>
+          <span>Genel Bakış</span>
+        </button>
+        <button class="nav-item" data-page="packages">
+          <span class="nav-ico">📦</span>
+          <span>Paketler (Ücretsiz / Premium / Kurumsal / B2B)</span>
+        </button>
+        <button class="nav-item" data-page="ortak">
+          <span class="nav-ico">🤖</span>
+          <span>ORTAK Asistan</span>
+        </button>
+        <button class="nav-item" data-page="logs">
+          <span class="nav-ico">📜</span>
+          <span>Log &amp; Geçmiş</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="version">
+          <div class="version-title">Motor durumu</div>
+          <div class="version-badges">
+            <span class="badge">ORTAK v1.0</span>
+            <span class="badge ghost">Mock &amp; API mod</span>
           </div>
         </div>
-
-        <div class="api-status-box">
-          <span id="api-status-pill" class="status-pill status-disconnected"></span>
-          <span id="api-status-text">API bağlantısı yok (mock mod)</span>
+        <div class="quick-actions">
+          <button id="btn-refresh" class="ghost-btn">Verileri yenile</button>
+          <button id="btn-toggle-mock" class="ghost-btn sm">Mock / Live</button>
         </div>
+      </div>
+    </aside>
 
-        <nav class="nav">
-          <div class="nav-title">Katmanlar</div>
-          <button class="nav-item nav-item-active">Genel Bakış</button>
-          <button class="nav-item">Core (Beyin)</button>
-          <button class="nav-item">Growth</button>
-          <button class="nav-item">Services</button>
-          <button class="nav-item">Sharing</button>
-          <button class="nav-item">Security</button>
-          <button class="nav-item">Updating</button>
-          <button class="nav-item">Komutlar</button>
-          <button class="nav-item">Monetization</button>
-          <button class="nav-item">Sonsuzluk Merkezi</button>
-        </nav>
-
-        <div class="sidebar-footer">
-          <div class="version-tag">UI v1.0</div>
-          <div class="version-tag muted">API durum: <span id="api-short-status">OFF</span></div>
+    <!-- MAIN -->
+    <main class="main">
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1>Kontrol Merkezi</h1>
+          <p>Platformun beyni, Ortak ve paketleri tek yerden yönet.</p>
         </div>
-      </aside>
-
-      <!-- Sağ Ana Alan -->
-      <main class="main">
-        <header class="main-header">
-          <div>
-            <h1>Genel Bakış</h1>
-            <p class="subtitle">Tüm katmanları buradan izleyip yönetebilirsin.</p>
+        <div class="topbar-right">
+          <div class="user-chip">
+            <span class="user-dot"></span>
+            <div>
+              <div class="user-name">Kadir</div>
+              <div class="user-role">Kurucu &amp; Pilot</div>
+            </div>
           </div>
-          <div class="header-actions">
-            <button id="refresh-btn" class="btn ghost">Yenile</button>
-            <button class="btn primary">Live</button>
+        </div>
+      </header>
+
+      <!-- PAGES -->
+      <section class="content">
+
+        <!-- GENEL BAKIŞ -->
+        <section class="page active" data-page="overview">
+          <div class="grid kpi-grid">
+            <div class="card kpi">
+              <div class="kpi-label">Bugünkü Ziyaret</div>
+              <div id="kpi-todayVisits" class="kpi-value">-</div>
+              <div class="kpi-sub">Son 24 saatte toplam ziyaret</div>
+            </div>
+            <div class="card kpi">
+              <div class="kpi-label">Anlık Aktif Kullanıcı</div>
+              <div id="kpi-activeUsers" class="kpi-value">-</div>
+              <div class="kpi-sub">Şu anda çevrimiçi</div>
+            </div>
+            <div class="card kpi">
+              <div class="kpi-label">Günlük Büyüme</div>
+              <div id="kpi-growthRate" class="kpi-value">-</div>
+              <div class="kpi-sub">Bugün yüzdesel büyüme</div>
+            </div>
+            <div class="card kpi">
+              <div class="kpi-label">Sistem Sağlığı</div>
+              <div id="kpi-systemHealth" class="kpi-value">-</div>
+              <div class="kpi-sub">Genel sağlık skoru</div>
+            </div>
           </div>
-        </header>
 
-        <!-- Üst istatistik kartları -->
-        <section class="cards-row">
-          <article class="card">
-            <div class="card-label">Bugünkü Ziyaret</div>
-            <div class="card-value" id="metric-today-visits">–</div>
-            <div class="card-helper">Son 24 saat</div>
-          </article>
-
-          <article class="card">
-            <div class="card-label">Aktif Kullanıcı</div>
-            <div class="card-value" id="metric-active-users">–</div>
-            <div class="card-helper">Canlı oturum</div>
-          </article>
-
-          <article class="card">
-            <div class="card-label">Büyüme Oranı</div>
-            <div class="card-value" id="metric-growth-rate">–</div>
-            <div class="card-helper">Genel trend</div>
-          </article>
-        </section>
-
-        <!-- Orta bloklar -->
-        <section class="grid-2">
-          <!-- Sistem Sağlığı -->
-          <article class="card card-large">
-            <div class="card-header">
-              <div>
-                <div class="card-title">Sistem Sağlığı Detayı</div>
-                <div class="card-helper">
-                  API çalışma, gecikme ve hata oranını gösterir.
+          <div class="grid two-col">
+            <div class="card">
+              <div class="card-head">
+                <h2>Ortak Özeti</h2>
+                <span id="ortak-mood-pill" class="pill ghost">-</span>
+              </div>
+              <p id="ortak-summary-main" class="muted">
+                Ortak sistemden gelen özet burada görünecek.
+              </p>
+              <div class="divider"></div>
+              <div class="mini-grid">
+                <div class="mini">
+                  <div class="mini-title">Trafik</div>
+                  <div id="mini-traffic" class="mini-val">-</div>
+                </div>
+                <div class="mini">
+                  <div class="mini-title">Uptime</div>
+                  <div id="mini-uptime" class="mini-val">-</div>
+                </div>
+                <div class="mini">
+                  <div class="mini-title">Hata Oranı</div>
+                  <div id="mini-error" class="mini-val">-</div>
+                </div>
+                <div class="mini">
+                  <div class="mini-title">Latency</div>
+                  <div id="mini-latency" class="mini-val">-</div>
+                </div>
+                <div class="mini">
+                  <div class="mini-title">Son Güncelleme</div>
+                  <div id="mini-updated" class="mini-val">-</div>
                 </div>
               </div>
             </div>
 
-            <div class="health-row">
-              <div class="health-label">API çalışma</div>
-              <div class="health-bar">
-                <div id="health-api" class="health-fill"></div>
+            <div class="card">
+              <div class="card-head">
+                <h2>Katman Durumu</h2>
               </div>
-              <div id="health-api-text" class="health-value">–</div>
+              <div id="service-list" class="status-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAKETLER -->
+        <section class="page" data-page="packages">
+          <div class="card">
+            <div class="card-head">
+              <h2>Paket Yönetimi</h2>
+              <span class="pill ok">Platformda sadece Ücretsiz paket şu an açık</span>
+            </div>
+            <p class="muted">
+              Buradaki ana amaç: kontlor merkezinden paketleri aç / kapat
+              mantığını kurmak. Şu an durum <strong>kontrol merkezinde tutuluyor</strong>,
+              ileride platform koduna bağlayacağız.
+            </p>
+
+            <div class="toggle-list">
+              <div class="toggle-item">
+                <div>
+                  <div class="toggle-title">Ücretsiz Paket</div>
+                  <div class="toggle-desc">Şu anda yayında olan temel paket.</div>
+                </div>
+                <label class="switch">
+                  <input id="pkg-free" type="checkbox" data-label="Ücretsiz Paket" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div>
+                  <div class="toggle-title">Premium Paket</div>
+                  <div class="toggle-desc">İçerik limitleri, hız ve ekstra özellikler.</div>
+                </div>
+                <label class="switch">
+                  <input id="pkg-premium" type="checkbox" data-label="Premium" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div>
+                  <div class="toggle-title">Kurumsal Paket</div>
+                  <div class="toggle-desc">Kurumsal müşteriler, ekipler, B2B entegrasyonlar.</div>
+                </div>
+                <label class="switch">
+                  <input id="pkg-kurumsal" type="checkbox" data-label="Kurumsal" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div>
+                  <div class="toggle-title">B2B / API Paket</div>
+                  <div class="toggle-desc">Harici şirketlere API / özel hizmet.</div>
+                </div>
+                <label class="switch">
+                  <input id="pkg-b2b" type="checkbox" data-label="B2B" />
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
 
-            <div class="health-row">
-              <div class="health-label">Ortalama gecikme</div>
-              <div class="health-bar">
-                <div id="health-latency" class="health-fill"></div>
-              </div>
-              <div id="health-latency-text" class="health-value">–</div>
-            </div>
+            <div class="divider"></div>
+            <p class="muted">
+              Şu anki aşamada bu anahtarlar <strong>kontrol merkezinde saklanıyor</strong>
+              (localStorage). Sonraki adımda bu durumu API üzerinden platforma bağlayacağız ki
+              gerçekten site tarafında paketler açılıp kapansın.
+            </p>
+          </div>
+        </section>
 
-            <div class="health-row">
-              <div class="health-label">Hata oranı</div>
-              <div class="health-bar">
-                <div id="health-errors" class="health-fill"></div>
+        <!-- ORTAK -->
+        <section class="page" data-page="ortak">
+          <div class="grid two-col">
+            <div class="card assistant-box">
+              <div class="card-head">
+                <h2>ORTAK – Komut Asistanı</h2>
+                <span id="ortak-mood-chip" class="pill ghost">-</span>
               </div>
-              <div id="health-errors-text" class="health-value">–</div>
-            </div>
-          </article>
-
-          <!-- Ortak Konuşuyor -->
-          <article class="card card-large">
-            <div class="card-header">
-              <div>
-                <div class="card-title">Ortak Konuşuyor</div>
-                <div class="card-helper">
-                  Ortak motoru, API’den gelen son özeti buraya yazar.
+              <div class="assistant-msg">
+                <div class="assistant-avatar"></div>
+                <div id="assistant-bubble" class="assistant-bubble">
+                  <div class="assistant-title">ORTAK</div>
+                  <p id="assistant-text">
+                    Merhaba Kadir. API bağlantısı hazır olduğunda seninle konuşarak;
+                    büyüme, ziyaretçi ve paketler hakkında öneriler vereceğim.
+                  </p>
                 </div>
               </div>
-              <button id="force-summary-btn" class="btn ghost small">
-                Özeti Güncelle
-              </button>
+              <div class="assistant-actions">
+                <button id="assistant-btn-summary" class="btn primary">
+                  Güncel özeti getir
+                </button>
+                <button id="assistant-btn-growth" class="btn ghost">
+                  Büyüme tavsiyesi iste
+                </button>
+                <button id="assistant-btn-risk" class="btn ghost">
+                  Riskleri sor
+                </button>
+              </div>
             </div>
 
-            <div class="ortak-output" id="ortak-summary">
-              Ortak henüz konuşmadı. API bağlanınca buraya son özetler düşecek.
+            <div class="card">
+              <div class="card-head">
+                <h2>Komut Konsolu</h2>
+              </div>
+              <div class="command-input">
+                <input id="cmd-input" placeholder="Örn: status, restart core, help…" />
+                <button id="cmd-run" class="btn primary">Komutu Çalıştır</button>
+              </div>
+              <div class="command-tags">
+                <button class="tag" data-cmd="status">status</button>
+                <button class="tag" data-cmd="restart core">restart core</button>
+                <button class="tag" data-cmd="scale auto">scale auto</button>
+                <button class="tag" data-cmd="help">help</button>
+              </div>
+              <pre id="cmd-output" class="cmd-output"></pre>
             </div>
-          </article>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Ortak Görev Haritası (API /features)</h2>
+            </div>
+            <p class="muted">
+              Bu bölüm Render’daki <code>/api/ortak/features</code> endpoint’inden gelen
+              görev / metrik / mod listesini gösterir.
+            </p>
+            <ul id="features-list" class="bullet"></ul>
+          </div>
         </section>
 
-        <!-- Alt kısım: acil mod, panel kilit vb. -->
-        <section class="bottom-actions">
-          <button class="btn outline">Paneli Kilitle</button>
-          <button class="btn outline">Acil Kilitle</button>
-          <button class="btn danger">Acil Mod</button>
+        <!-- LOGS -->
+        <section class="page" data-page="logs">
+          <div class="card">
+            <div class="card-head">
+              <h2>Log &amp; Sistem Olayları</h2>
+              <div class="card-actions">
+                <button id="btn-clear-logs" class="ghost-btn sm">Logları temizle</button>
+              </div>
+            </div>
+            <ul id="log-list" class="log-list"></ul>
+          </div>
         </section>
-      </main>
-    </div>
 
-    <script src="scripts.js"></script>
-  </body>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast">
+    <div id="toast-inner" class="toast-inner">Mesaj</div>
+  </div>
+
+  <script src="./scripts.js"></script>
+</body>
 </html>
